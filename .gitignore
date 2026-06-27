@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Runtime data
+data/
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Test artifacts
+coverage/
+.nyc_output/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Reports/exports（保留目录结构，忽略内容）
+reports/*
+!reports/.gitkeep
+exports/*
+!exports/.gitkeep
+reports/.archive/*
+!reports/.archive/.gitkeep
