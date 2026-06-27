@@ -20,6 +20,7 @@ import {
 import type { CardVisibleLevel } from "../schema/scoring-rules";
 import { LEVEL_DEFINITIONS } from "../schema/scoring-rules";
 import type { VisibleLevel } from "../schema/scoring-rules";
+import { t } from "../i18n/locales";
 
 // ============================================================
 // 辅助函数：空值处理
@@ -27,13 +28,13 @@ import type { VisibleLevel } from "../schema/scoring-rules";
 
 /** 字符串空值处理：空字符串或"未明确"标「未明确」 */
 function formatString(value: string | undefined | null): string {
-  if (value === undefined || value === null || value === "") return "未明确";
+  if (value === undefined || value === null || value === "") return t("opportunity.card.unspecified");
   return value;
 }
 
 /** URL 空值处理：空字符串标「需人工复核」 */
 function formatUrl(value: string | undefined | null): string {
-  if (value === undefined || value === null || value === "") return "需人工复核";
+  if (value === undefined || value === null || value === "") return t("opportunity.card.needsReview");
   return value;
 }
 
@@ -75,7 +76,7 @@ export function renderCardCompact(card: OpportunityCard): string {
   const title = formatString(card.title);
   const deadline = formatString(card.deadline);
   const matchReason = formatString(card.match_reason);
-  return `- [${level}] ${title}（截止：${deadline}）— ${matchReason}`;
+  return `- [${level}] ${title}（${t("opportunity.card.deadlinePrefix")}${deadline}）— ${matchReason}`;
 }
 
 // ============================================================
@@ -129,7 +130,7 @@ export function renderCardDetail(card: OpportunityCard): string {
   // V0.5 阶段 OpportunityCard 无 source 字段，默认显示"手动录入"
   const sourceLabel = CARD_SOURCE_LABELS.manual;
   const days = daysUntilDeadline(card.deadline);
-  const daysText = Number.isNaN(days) ? "未明确" : `${days} 天`;
+  const daysText = Number.isNaN(days) ? t("opportunity.card.unspecified") : t("opportunity.card.daysText", { days });
 
   lines.push(`# ${formatString(card.title)}`);
   lines.push("");

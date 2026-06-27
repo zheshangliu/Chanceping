@@ -24,6 +24,7 @@ import {
 import { BRAND } from "../brand/constants";
 import { MUST_INCLUDE_SECTIONS } from "../schema/radar-requirement-spec";
 import { LEVEL_DEFINITIONS } from "../schema/scoring-rules";
+import { t } from "../i18n/locales";
 
 // ============================================================
 // 类型定义
@@ -113,7 +114,7 @@ function deriveMustHaveSignals(primaryTypes: string[] | undefined): string[] {
 function buildModule1(info: ExtractedRequirementInfo): string {
   const ci = info.client_identity ?? {};
   return [
-    "## 1. 我理解你的身份",
+    `## ${t("chat.section.identity")}`,
     `- 用户类型：${strOrUnknown(ci.client_type)}`,
     `- 所属行业：${strOrUnknown(ci.industry)}`,
     `- 当前项目 / 公司：${arrOrUnknown(ci.products_or_projects)}`,
@@ -125,7 +126,7 @@ function buildModule1(info: ExtractedRequirementInfo): string {
 function buildModule2(info: ExtractedRequirementInfo): string {
   const bg = info.business_goal ?? {};
   return [
-    "## 2. 我理解你的核心目标",
+    `## ${t("chat.section.goals")}`,
     `- 第一目标：${strOrUnknown(bg.primary_goal)}`,
     `- 第二目标：${arrOrUnknown(bg.secondary_goals)}`,
     `- 成功标准：${strOrUnknown(bg.success_definition)}`,
@@ -135,10 +136,10 @@ function buildModule2(info: ExtractedRequirementInfo): string {
 /** 模块 3：我理解你需要盯的机会类型 */
 function buildModule3(info: ExtractedRequirementInfo): string {
   const ot = info.opportunity_type ?? {};
-  const lines: string[] = ["## 3. 我理解你需要盯的机会类型"];
+  const lines: string[] = [`## ${t("chat.section.opportunityTypes")}`];
 
   if (hasArr(ot.primary_types)) {
-    ot.primary_types.forEach((t, i) => lines.push(`${i + 1}. ${t}`));
+    ot.primary_types.forEach((item, i) => lines.push(`${i + 1}. ${item}`));
     if (hasArr(ot.secondary_types)) {
       lines.push(`次要类型：${ot.secondary_types.join("、")}`);
     }
@@ -152,7 +153,7 @@ function buildModule3(info: ExtractedRequirementInfo): string {
 /** 模块 4：我建议优先追踪的信号 */
 function buildModule4(info: ExtractedRequirementInfo): string {
   const ot = info.opportunity_type ?? {};
-  const lines: string[] = ["## 4. 我建议优先追踪的信号"];
+  const lines: string[] = [`## ${t("chat.section.trackingSignals")}`];
 
   let signals: string[];
   if (hasArr(ot.must_have_conditions)) {
@@ -180,7 +181,7 @@ function buildModule5(info: ExtractedRequirementInfo): string {
     }
   }
 
-  const lines: string[] = ["## 5. 我建议优先排除的信息"];
+  const lines: string[] = [`## ${t("chat.section.excludedInfo")}`];
   if (merged.length === 0) {
     lines.push("暂无排除条件，请在确认时补充");
   } else {
@@ -195,7 +196,7 @@ function buildModule6(info: ExtractedRequirementInfo): string {
   const ci = info.client_identity ?? {};
   const as = info.action_scenario ?? {};
 
-  const lines: string[] = ["## 6. 我建议的雷达方向"];
+  const lines: string[] = [`## ${t("chat.section.radarDirection")}`];
 
   let radars: string[] = [];
   if (hasArr(ot.primary_types)) {
@@ -221,7 +222,7 @@ function buildModule6(info: ExtractedRequirementInfo): string {
 /** 模块 7：我建议的机会分级方式 */
 function buildModule7(): string {
   return [
-    "## 7. 我建议的机会分级方式",
+    `## ${t("chat.section.opportunityGrading")}`,
     `- S 级：${LEVEL_DEFINITIONS.S}`,
     `- A 级：${LEVEL_DEFINITIONS.A}`,
     `- B 级：${LEVEL_DEFINITIONS.B}`,
@@ -231,14 +232,14 @@ function buildModule7(): string {
 
 /** 模块 8：我建议的报告结构 */
 function buildModule8(): string {
-  const lines: string[] = ["## 8. 我建议的报告结构"];
+  const lines: string[] = [`## ${t("chat.section.reportStructure")}`];
   MUST_INCLUDE_SECTIONS.forEach((s, i) => lines.push(`${i + 1}. ${s}`));
   return lines.join("\n");
 }
 
 /** 模块 9：当前需求确认度 */
 function buildModule9(confidence: RequirementConfidence): string {
-  const lines: string[] = ["## 9. 当前需求确认度"];
+  const lines: string[] = [`## ${t("chat.section.confidenceLevel")}`];
   const total = Math.round(confidence.total * 10) / 10;
   lines.push(`- 总体确认度：${total}%`);
 
@@ -270,7 +271,7 @@ function buildModule9(confidence: RequirementConfidence): string {
 /** 模块 10：请你确认（固定 3 问） */
 function buildModule10(): string {
   return [
-    "## 10. 请你确认",
+    `## ${t("chat.section.pleaseConfirm")}`,
     "1. 这个需求理解是否准确？",
     "2. 有没有需要删除或补充的机会类型？",
     "3. 是否可以基于这份需求确认卡，生成第一版雷达方案？",

@@ -6,6 +6,8 @@
  * 权重与分级阈值严格按文档，不得调整。
  */
 
+import { t } from "../i18n/locales";
+
 /** 前台可见等级（hidden 表示默认不主动展示） */
 export type VisibleLevel = "S" | "A" | "B" | "C" | "hidden";
 
@@ -96,4 +98,14 @@ export function createDefaultScoringRules(): ScoringRules {
     visible_level_mapping: { ...VISIBLE_LEVEL_MAPPING },
     level_definitions: { ...LEVEL_DEFINITIONS },
   };
+}
+
+// ============================================================
+// locale 感知等级定义函数（Task 018 新增，向后兼容）
+// ============================================================
+
+/** 获取等级定义说明的 locale 感知文案 */
+export function getLevelDefinition(level: VisibleLevel, locale?: string): string {
+  const key = `opportunity.level.${level}`;
+  return locale ? t(key, { lng: locale }) : t(key);
 }

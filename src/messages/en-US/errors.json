@@ -1,0 +1,5 @@
+{
+  "errors.requiredFieldMissing": "Required field missing",
+  "errors.invalidStatus": "Invalid status",
+  "errors.localeNotSupported": "Locale not supported"
+}

@@ -1,0 +1,15 @@
+{
+  "report.title": "机会雷达周报",
+  "report.section.overview": "0. 本周一句话判断",
+  "report.section.sLevel": "1. 本周 S 级机会",
+  "report.section.aLevel": "2. 本周 A 级机会",
+  "report.section.bLevel": "3. 本周 B 级机会",
+  "report.section.cLevel": "五、C 级机会（仅供参考）",
+  "report.section.expiringSoon": "4. 即将截止机会",
+  "report.section.detailCard": "5. 机会详情卡片",
+  "report.section.suggestedAction": "6. 本周建议行动",
+  "report.section.excluded": "7. 不建议投入的机会",
+  "report.section.nextWeekTracking": "8. 下周继续追踪",
+  "report.section.dataSource": "八、信息来源",
+  "report.section.conclusion": "本周结论"
+}

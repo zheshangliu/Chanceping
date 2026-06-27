@@ -88,21 +88,64 @@ const TMP_REPORTS_DIR = path.resolve(process.cwd(), "reports/test-integration");
 const TMP_EXPORTS_DIR = path.resolve(process.cwd(), "exports/test-integration");
 const TMP_STORE_FILE = path.resolve(process.cwd(), "data/test-integration-store.json");
 
-/** 清理临时文件 */
+/** 清理临时文件（双重保险，应对 Windows 文件句柄占用 + 隐藏子目录） */
 function cleanupTempFiles(): void {
   const targets = [TMP_REPORTS_DIR, TMP_EXPORTS_DIR, TMP_STORE_FILE];
   for (const target of targets) {
     try {
-      if (fs.existsSync(target)) {
-        const stat = fs.statSync(target);
-        if (stat.isDirectory()) {
-          fs.rmSync(target, { recursive: true, force: true });
-        } else {
-          fs.rmSync(target, { force: true });
+      if (!fs.existsSync(target)) continue;
+      const stat = fs.statSync(target);
+      if (stat.isDirectory()) {
+        // 第 1 重：尝试递归删除
+        fs.rmSync(target, { recursive: true, force: true });
+        // 第 2 重：若仍存在（Windows 文件句柄占用或隐藏子目录），递归清空再删
+        if (fs.existsSync(target)) {
+          clearDirectoryRecursive(target);
+          try { fs.rmdirSync(target); } catch {}
+        }
+      } else {
+        // 文件：第 1 重删除
+        fs.rmSync(target, { force: true });
+        // 第 2 重：若仍存在，写入空内容覆盖
+        if (fs.existsSync(target)) {
+          try { fs.writeFileSync(target, "", "utf-8"); } catch {}
         }
       }
     } catch {
-      // 忽略清理失败（Windows 文件句柄占用）
+      // 最终兜底：忽略
+    }
+  }
+}
+
+/** 递归清空目录内所有内容（含隐藏文件/子目录，如 .archive/） */
+function clearDirectoryRecursive(dirPath: string): void {
+  // readdirSync 默认不返回以 . 开头的文件/目录，需要特殊处理
+  const entries = fs.readdirSync(dirPath, { withFileTypes: true });
+  for (const entry of entries) {
+    const entryPath = path.join(dirPath, entry.name);
+    try {
+      if (entry.isDirectory()) {
+        // 递归清空子目录
+        clearDirectoryRecursive(entryPath);
+        try { fs.rmdirSync(entryPath); } catch {}
+      } else {
+        fs.rmSync(entryPath, { force: true });
+        if (fs.existsSync(entryPath)) {
+          try { fs.writeFileSync(entryPath, "", "utf-8"); } catch {}
+        }
+      }
+    } catch {
+      // 忽略单个文件清理失败
+    }
+  }
+  // 额外检查隐藏目录（readdirSync 在某些 Windows 环境可能遗漏）
+  const hiddenEntries = fs.readdirSync(dirPath);
+  for (const name of hiddenEntries) {
+    if (name.startsWith(".")) {
+      const hiddenPath = path.join(dirPath, name);
+      try {
+        fs.rmSync(hiddenPath, { recursive: true, force: true });
+      } catch {}
     }
   }
 }

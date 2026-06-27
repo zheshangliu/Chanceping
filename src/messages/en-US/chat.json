@@ -1,0 +1,23 @@
+{
+  "chat.confirmation.title": "Requirement Confirmation Card",
+  "chat.confirmation.basicInfo": "I. Basic Information",
+  "chat.confirmation.clientProfile": "II. Client Profile",
+  "chat.confirmation.coreGoals": "III. Core Goals",
+  "chat.confirmation.constraints": "IV. Constraints",
+  "chat.confirmation.regionScope": "V. Region Scope",
+  "chat.confirmation.keywords": "VI. Keyword Strategy",
+  "chat.confirmation.schedule": "VII. Schedule",
+  "chat.confirmation.budget": "VIII. Budget",
+  "chat.confirmation.actionIntent": "IX. Action Intent",
+  "chat.confirmation.confidence": "X. Confidence Assessment",
+  "chat.section.identity": "1. Your Identity As I Understand",
+  "chat.section.goals": "2. Your Core Goals As I Understand",
+  "chat.section.opportunityTypes": "3. Opportunity Types You Want to Track",
+  "chat.section.trackingSignals": "4. Signals I Recommend Tracking",
+  "chat.section.excludedInfo": "5. Information I Recommend Excluding",
+  "chat.section.radarDirection": "6. Radar Direction I Recommend",
+  "chat.section.opportunityGrading": "7. Opportunity Grading I Recommend",
+  "chat.section.reportStructure": "8. Report Structure I Recommend",
+  "chat.section.confidenceLevel": "9. Current Requirement Confidence",
+  "chat.section.pleaseConfirm": "10. Please Confirm"
+}

@@ -1,0 +1,5 @@
+{
+  "errors.requiredFieldMissing": "必填字段缺失",
+  "errors.invalidStatus": "状态非法",
+  "errors.localeNotSupported": "不支持的语言"
+}

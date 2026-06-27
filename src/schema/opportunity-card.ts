@@ -9,6 +9,7 @@
  */
 
 import type { CardVisibleLevel } from "./scoring-rules";
+import { t } from "../i18n/locales";
 
 /** 机会卡片状态 */
 export type OpportunityCardStatus =
@@ -170,4 +171,26 @@ export function isStatusTransitionValid(
   // 查转换表
   const allowed = CARD_STATUS_TRANSITIONS[from] ?? [];
   return allowed.includes(to);
+}
+
+// ============================================================
+// locale 感知 LABELS 函数（Task 018 新增，向后兼容）
+// ============================================================
+
+/** 获取卡片状态的 locale 感知标签 */
+export function getCardStatusLabel(status: OpportunityCardStatus, locale?: string): string {
+  const key = `opportunity.status.${status}`;
+  return locale ? t(key, { lng: locale }) : t(key);
+}
+
+/** 获取卡片优先级的 locale 感知标签 */
+export function getCardPriorityLabel(priority: CardPriority, locale?: string): string {
+  const key = `opportunity.priority.${priority}`;
+  return locale ? t(key, { lng: locale }) : t(key);
+}
+
+/** 获取卡片来源的 locale 感知标签 */
+export function getCardSourceLabel(source: CardSource, locale?: string): string {
+  const key = `opportunity.source.${source}`;
+  return locale ? t(key, { lng: locale }) : t(key);
 }

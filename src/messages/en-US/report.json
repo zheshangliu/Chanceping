@@ -1,0 +1,15 @@
+{
+  "report.title": "Opportunity Radar Weekly",
+  "report.section.overview": "0. This Week's One-Sentence Verdict",
+  "report.section.sLevel": "1. This Week's S-Tier Opportunities",
+  "report.section.aLevel": "2. This Week's A-Tier Opportunities",
+  "report.section.bLevel": "3. This Week's B-Tier Opportunities",
+  "report.section.cLevel": "V. C-Tier Opportunities (reference only)",
+  "report.section.expiringSoon": "4. Expiring Soon",
+  "report.section.detailCard": "5. Opportunity Detail Cards",
+  "report.section.suggestedAction": "6. Suggested Actions This Week",
+  "report.section.excluded": "7. Not Recommended",
+  "report.section.nextWeekTracking": "8. Continue Tracking Next Week",
+  "report.section.dataSource": "VIII. Data Sources",
+  "report.section.conclusion": "This Week's Conclusion"
+}

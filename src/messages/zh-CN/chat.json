@@ -1,0 +1,23 @@
+{
+  "chat.confirmation.title": "需求确认卡",
+  "chat.confirmation.basicInfo": "一、基本信息",
+  "chat.confirmation.clientProfile": "二、客户画像",
+  "chat.confirmation.coreGoals": "三、核心目标",
+  "chat.confirmation.constraints": "四、约束条件",
+  "chat.confirmation.regionScope": "五、地区范围",
+  "chat.confirmation.keywords": "六、关键词策略",
+  "chat.confirmation.schedule": "七、时间安排",
+  "chat.confirmation.budget": "八、预算信息",
+  "chat.confirmation.actionIntent": "九、行动意图",
+  "chat.confirmation.confidence": "十、确认度评估",
+  "chat.section.identity": "1. 我理解你的身份",
+  "chat.section.goals": "2. 我理解你的核心目标",
+  "chat.section.opportunityTypes": "3. 我理解你需要盯的机会类型",
+  "chat.section.trackingSignals": "4. 我建议优先追踪的信号",
+  "chat.section.excludedInfo": "5. 我建议优先排除的信息",
+  "chat.section.radarDirection": "6. 我建议的雷达方向",
+  "chat.section.opportunityGrading": "7. 我建议的机会分级方式",
+  "chat.section.reportStructure": "8. 我建议的报告结构",
+  "chat.section.confidenceLevel": "9. 当前需求确认度",
+  "chat.section.pleaseConfirm": "10. 请你确认"
+}

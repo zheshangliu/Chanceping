@@ -22,6 +22,7 @@ import type { RadarRequirementSpec } from "../schema/radar-requirement-spec";
 import type { OpportunityCard, OpportunityCardStatus } from "../schema/opportunity-card";
 import type { VisibleLevel } from "../schema/scoring-rules";
 import { BRAND } from "../brand/constants";
+import { t } from "../i18n/locales";
 
 // ============================================================
 // 类型定义
@@ -223,7 +224,7 @@ function buildSection0(
   sLevelOpps: OpportunityCard[],
   expiringSoon: OpportunityCard[],
 ): string {
-  const lines: string[] = ["## 0. 本周一句话判断", ""];
+  const lines: string[] = [`## ${t("report.section.overview")}`, ""];
 
   if (stats.total_opportunities === 0) {
     lines.push(`本周${radarTypeName}暂无符合条件的新机会，下周继续追踪。`);
@@ -255,8 +256,9 @@ function buildLevelSection(
   level: "S" | "A" | "B",
   opps: OpportunityCard[],
 ): string {
-  const sectionNum = level === "S" ? 1 : level === "A" ? 2 : 3;
-  const lines: string[] = [`## ${sectionNum}. 本周 ${level} 级机会`, ""];
+  const sectionTitleKey =
+    level === "S" ? "report.section.sLevel" : level === "A" ? "report.section.aLevel" : "report.section.bLevel";
+  const lines: string[] = [`## ${t(sectionTitleKey)}`, ""];
 
   if (opps.length === 0) {
     lines.push(`本周暂无 ${level} 级机会`);
@@ -279,7 +281,7 @@ function buildSection4(
   periodStart: string,
   periodEnd: string,
 ): string {
-  const lines: string[] = ["## 4. 即将截止机会", ""];
+  const lines: string[] = [`## ${t("report.section.expiringSoon")}`, ""];
   lines.push(`> 截止日期在 7 天内（${periodStart} 至 ${periodEnd}）的机会。`);
   lines.push("");
 
@@ -300,7 +302,7 @@ function buildSection4(
 
 /** 章节 5：机会详情卡片 */
 function buildSection5(opps: OpportunityCard[]): string {
-  const lines: string[] = ["## 5. 机会详情卡片", ""];
+  const lines: string[] = [`## ${t("report.section.detailCard")}`, ""];
 
   if (opps.length === 0) {
     lines.push("本周暂无机会详情卡片");
@@ -341,7 +343,7 @@ function buildSection6(
   bOpps: OpportunityCard[],
   baseDate: Date,
 ): string {
-  const lines: string[] = ["## 6. 本周建议行动", ""];
+  const lines: string[] = [`## ${t("report.section.suggestedAction")}`, ""];
 
   const allOpps = [...sOpps, ...aOpps, ...bOpps];
   if (allOpps.length === 0) {
@@ -397,7 +399,7 @@ function buildSection6(
 function buildSection7(
   excluded: Array<{ opp: OpportunityCard; reason: string }>,
 ): string {
-  const lines: string[] = ["## 7. 不建议投入的机会", ""];
+  const lines: string[] = [`## ${t("report.section.excluded")}`, ""];
   lines.push("> 以下机会经筛选规则过滤后排除（excluded_opportunity_types / must_exclude / visible_level=hidden）。");
   lines.push("");
 
@@ -421,7 +423,7 @@ function buildSection8(
   spec: RadarRequirementSpec,
   baseDate: Date,
 ): string {
-  const lines: string[] = ["## 8. 下周继续追踪", ""];
+  const lines: string[] = [`## ${t("report.section.nextWeekTracking")}`, ""];
 
   const hasItems = bOpps.length > 0 || (spec.keyword_strategy.core_keywords_zh?.length ?? 0) > 0;
 
@@ -460,7 +462,7 @@ function buildConclusion(
   requiresManualReview: string[],
   baseDate: Date,
 ): string {
-  const lines: string[] = ["## 本周结论", ""];
+  const lines: string[] = [`## ${t("report.section.conclusion")}`, ""];
 
   const allOpps = [...sOpps, ...aOpps, ...bOpps];
   if (allOpps.length === 0) {
