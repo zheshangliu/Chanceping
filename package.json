@@ -17,7 +17,8 @@
     "verify:task027": "tsx scripts/verify-task027.ts",
     "verify:scheduler": "tsx scripts/verify-task028.ts",
     "verify:notify": "tsx scripts/verify-task029.ts",
-    "verify:review": "tsx scripts/verify-task030.ts"
+    "verify:review": "tsx scripts/verify-task030.ts",
+    "verify:export": "tsx scripts/verify-task031.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.0",
@@ -31,5 +32,8 @@
     "@types/node": "^22.5.0",
     "tsx": "^4.19.2",
     "typescript": "^5.5.4"
+  },
+  "optionalDependencies": {
+    "puppeteer": "^22.0.0"
   }
 }

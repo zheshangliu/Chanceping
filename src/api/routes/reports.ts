@@ -7,6 +7,10 @@ import { generateRadarReport } from "../../agents/radar-report-generator";
 import type { RadarReportInput } from "../../agents/radar-report-generator";
 import type { RadarRequirementSpec } from "../../schema/radar-requirement-spec";
 import type { OpportunityCard } from "../../schema/opportunity-card";
+import { exportReport } from "../../export/report-exporter";
+import type { ExportFormat } from "../../export/report-exporter";
+import { exportReview } from "../../export/review-exporter";
+import { generateReview } from "../../agents/opportunity-review";
 
 /** 默认高确认度 spec（用于 API 报告生成） */
 function createDefaultSpec(): RadarRequirementSpec {
@@ -109,6 +113,107 @@ export function reportRoutes(ctx: AppContext): Hono {
     } catch (err) {
       return c.json({ success: false, data: null, error: { code: "REPORT_ERROR", message: err instanceof Error ? err.message : String(err) }, duration_ms: Date.now() - start } satisfies ApiResponse, 500);
     }
+  });
+
+  // POST /export - 导出雷达报告（format=markdown/html/pdf）
+  app.post("/export", async (c) => {
+    const start = Date.now();
+    const format = (c.req.query("format") ?? "markdown") as ExportFormat;
+    let body: ReportGenerateRequest;
+    try {
+      body = await c.req.json();
+    } catch {
+      body = {} as ReportGenerateRequest;
+    }
+
+    try {
+      const spec = (body.spec as RadarRequirementSpec) ?? createDefaultSpec();
+      const opportunities = (body.opportunities as OpportunityCard[]) ?? [];
+      const radarType = body.radar_type ?? "ai_competition";
+      const today = new Date();
+      const input: RadarReportInput = {
+        spec,
+        opportunities,
+        radar_type: radarType,
+        period_start: body.period_start ?? new Date(today.getTime() - 7 * 86400000).toISOString().slice(0, 10),
+        period_end: body.period_end ?? today.toISOString().slice(0, 10),
+      };
+
+      const result = generateRadarReport(input);
+      if (!result.success || !result.markdown) {
+        return c.json({ success: false, data: null, error: { code: "REPORT_ERROR", message: result.error ?? "生成失败" }, duration_ms: Date.now() - start } satisfies ApiResponse, 500);
+      }
+
+      const exported = await exportReport(result.markdown, format);
+
+      // 保存到 reports/export/ 目录
+      const exportDir = path.resolve(process.cwd(), "reports", "export");
+      if (!fs.existsSync(exportDir)) {
+        fs.mkdirSync(exportDir, { recursive: true });
+      }
+      fs.writeFileSync(path.join(exportDir, exported.filename), exported.content);
+
+      // 返回文件
+      c.header("Content-Disposition", `attachment; filename="${exported.filename}"`);
+      c.header("Content-Type", exported.contentType);
+      return c.body(exported.content);
+    } catch (err) {
+      return c.json({ success: false, data: null, error: { code: "EXPORT_ERROR", message: err instanceof Error ? err.message : String(err) }, duration_ms: Date.now() - start } satisfies ApiResponse, 500);
+    }
+  });
+
+  // POST /review/export - 导出复盘报告（format=markdown/html/pdf）
+  app.post("/review/export", async (c) => {
+    const start = Date.now();
+    const format = (c.req.query("format") ?? "markdown") as ExportFormat;
+    try {
+      const entries = ctx.store.list({ page: 1, page_size: 10000 }).entries;
+      const review = generateReview(entries, 30);
+      const exported = await exportReview(review, format);
+
+      const exportDir = path.resolve(process.cwd(), "reports", "export");
+      if (!fs.existsSync(exportDir)) {
+        fs.mkdirSync(exportDir, { recursive: true });
+      }
+      fs.writeFileSync(path.join(exportDir, exported.filename), exported.content);
+
+      c.header("Content-Disposition", `attachment; filename="${exported.filename}"`);
+      c.header("Content-Type", exported.contentType);
+      return c.body(exported.content);
+    } catch (err) {
+      return c.json({ success: false, data: null, error: { code: "EXPORT_ERROR", message: err instanceof Error ? err.message : String(err) }, duration_ms: Date.now() - start } satisfies ApiResponse, 500);
+    }
+  });
+
+  // GET /export/list - 列出已导出报告文件
+  app.get("/export/list", (c) => {
+    const start = Date.now();
+    const exportDir = path.resolve(process.cwd(), "reports", "export");
+    const files: Array<{ filename: string; size: number; created_at: string }> = [];
+    if (fs.existsSync(exportDir)) {
+      const list = fs.readdirSync(exportDir);
+      for (const filename of list) {
+        const stat = fs.statSync(path.join(exportDir, filename));
+        files.push({ filename, size: stat.size, created_at: stat.mtime.toISOString() });
+      }
+    }
+    return c.json({ success: true, data: { files, total: files.length }, error: null, duration_ms: Date.now() - start } satisfies ApiResponse);
+  });
+
+  // GET /export/:filename - 下载指定报告文件
+  app.get("/export/:filename", (c) => {
+    const start = Date.now();
+    const filename = c.req.param("filename");
+    const filePath = path.resolve(process.cwd(), "reports", "export", filename);
+    if (!fs.existsSync(filePath)) {
+      return c.json({ success: false, data: null, error: { code: "NOT_FOUND", message: "文件不存在" }, duration_ms: Date.now() - start } satisfies ApiResponse, 404);
+    }
+    const content = fs.readFileSync(filePath);
+    const ext = path.extname(filename).toLowerCase();
+    const contentType = ext === ".pdf" ? "application/pdf" : ext === ".html" ? "text/html; charset=utf-8" : "text/markdown; charset=utf-8";
+    c.header("Content-Disposition", `attachment; filename="${filename}"`);
+    c.header("Content-Type", contentType);
+    return c.body(content);
   });
 
   return app;
