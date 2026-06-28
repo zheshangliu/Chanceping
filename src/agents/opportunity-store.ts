@@ -159,18 +159,35 @@ const VISIBLE_LEVELS: Array<CardVisibleLevel | "hidden"> = ["S", "A", "B", "C", 
 // ============================================================
 
 /**
- * 计算 dedup_key（title + official_source_url 的 sha256 hash，截取前 16 位）。
+ * 计算 dedup_key（T2 升级：guid > url 去重优先级）。
+ *
+ * 规则（Task 019b 第 4.2 节）：
+ *   - 有 guid 时：dedup_key = sha256(guid).slice(0,16)，title 和 url 不参与计算
+ *   - 无 guid 时：dedup_key = sha256(title|url).slice(0,16)（现有逻辑，向后兼容）
  *
  * 理由（Task 015 附录 A.2）：
  *   - title：机会名称是核心标识
  *   - official_source_url：官方链接是唯一来源
  *   - 两者组合可区分不同机会
+ *   - guid：RSS/搜索源提供的全局唯一标识，优先级最高，避免同一机会不同 URL 重复入库
+ *
+ * 向后兼容：不传 guid 时行为与现有完全一致（`sha256(title|url).slice(0,16)`）。
  *
  * @param title 机会名称
  * @param official_source_url 官方来源链接
+ * @param guid 全局唯一标识（可选，T2 新增）
  * @returns 16 位 hex 字符串
  */
-export function computeDedupKey(title: string, official_source_url: string): string {
+export function computeDedupKey(
+  title: string,
+  official_source_url: string,
+  guid?: string,
+): string {
+  // T2: 有 guid 时优先用 guid 去重
+  if (guid && guid !== "") {
+    return crypto.createHash("sha256").update(guid, "utf-8").digest("hex").slice(0, 16);
+  }
+  // 无 guid 时使用现有逻辑（向后兼容）
   const raw = `${title}|${official_source_url}`;
   return crypto.createHash("sha256").update(raw, "utf-8").digest("hex").slice(0, 16);
 }
@@ -239,7 +256,7 @@ export class LocalFileStore implements OpportunityStore {
 
   /** 添加卡片（自动去重） */
   add(card: OpportunityCard, radar_type: RadarType): StoreEntry {
-    const dedupKey = computeDedupKey(card.title, card.official_source_url);
+    const dedupKey = computeDedupKey(card.title, card.official_source_url, card.guid);
     const existing = this.entries.get(dedupKey);
     const now = nowIso();
 
@@ -274,7 +291,7 @@ export class LocalFileStore implements OpportunityStore {
     const results: StoreEntry[] = [];
     for (const card of cards) {
       // 批量添加时暂不自动 flush，最后统一 flush
-      const dedupKey = computeDedupKey(card.title, card.official_source_url);
+      const dedupKey = computeDedupKey(card.title, card.official_source_url, card.guid);
       const existing = this.entries.get(dedupKey);
       const now = nowIso();
       let entry: StoreEntry;

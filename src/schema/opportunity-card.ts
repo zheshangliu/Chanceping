@@ -60,6 +60,8 @@ export interface OpportunityCard {
   visible_level: CardVisibleLevel;
   /** 卡片状态 */
   status: OpportunityCardStatus;
+  /** T2: 全局唯一标识，RSS/搜索源提供时优先用于去重（可选，向后兼容） */
+  guid?: string;
 }
 
 // ============================================================

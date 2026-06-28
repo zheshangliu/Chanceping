@@ -310,15 +310,17 @@ cleanupTestFile();
     return diff >= 0 && diff <= 7;
   }));
 
-  // list deadline_from
-  const fromJul = store.list({ deadline_from: "2026-07-01" });
-  check("list deadline_from=2026-07-01 → 3 条（远期 3 个）", fromJul.total === 3, `total=${fromJul.total}`);
-  check("list deadline_from → 全部 >= 2026-07-01", fromJul.entries.every((e) => e.card.deadline >= "2026-07-01"));
+  // list deadline_from（用相对日期避免日期漂移，daysFromNow(4) 在 card2=3天 和 card3=5天 之间）
+  const fromBoundary = daysFromNow(4);
+  const fromJul = store.list({ deadline_from: fromBoundary });
+  check("list deadline_from → 3 条（远期 3 个）", fromJul.total === 3, `total=${fromJul.total}`);
+  check("list deadline_from → 全部 >= 边界日期", fromJul.entries.every((e) => e.card.deadline >= fromBoundary));
 
-  // list deadline_to
-  const toJun = store.list({ deadline_to: "2026-06-30" });
-  check("list deadline_to=2026-06-30 → 2 条（7 天内 2 个）", toJun.total === 2, `total=${toJun.total}`);
-  check("list deadline_to → 全部 <= 2026-06-30", toJun.entries.every((e) => e.card.deadline <= "2026-06-30"));
+  // list deadline_to（用相对日期避免日期漂移）
+  const toBoundary = daysFromNow(4);
+  const toJun = store.list({ deadline_to: toBoundary });
+  check("list deadline_to → 2 条（7 天内 2 个）", toJun.total === 2, `total=${toJun.total}`);
+  check("list deadline_to → 全部 <= 边界日期", toJun.entries.every((e) => e.card.deadline <= toBoundary));
 
   // list 组合查询
   const combined = store.list({
@@ -857,8 +859,8 @@ cleanupTestFile();
   check("V0.6-3a: 查询 radar_type", store.list({ radar_type: "ai_competition" }).total >= 1);
   check("V0.6-3b: 查询 visible_level", store.list({ visible_level: "S" }).total >= 1);
   check("V0.6-3c: 查询 status", store.list({ status: "saved" }).total >= 1);
-  check("V0.6-3d: 查询 deadline_from", store.list({ deadline_from: "2026-07-01" }).total >= 1);
-  check("V0.6-3e: 查询 deadline_to", store.list({ deadline_to: "2026-06-30" }).total >= 1);
+  check("V0.6-3d: 查询 deadline_from", store.list({ deadline_from: daysFromNow(10) }).total >= 1);
+  check("V0.6-3e: 查询 deadline_to", store.list({ deadline_to: daysFromNow(10) }).total >= 1);
   check("V0.6-3f: 查询 starred_only", store.list({ starred_only: true }).total >= 1);
   check("V0.6-3g: 查询 expiring_soon", store.list({ expiring_soon: true }).total >= 1);
 
