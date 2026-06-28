@@ -460,7 +460,7 @@ async function main(): Promise<void> {
     check("25.2 验证脚本不启动真实服务器（用 app.request）", typeof app.request === "function");
   }
 
-  // 测试 26: 不引入额外依赖（除 hono + @hono/node-server）
+  // 测试 26: 不引入额外依赖（除 hono + @hono/node-server；Task 023 引入 meilisearch 为合法依赖）
   {
     const pkg = JSON.parse(fs.readFileSync("package.json", "utf-8"));
     const deps = Object.keys(pkg.dependencies);
@@ -468,8 +468,9 @@ async function main(): Promise<void> {
       (d) => !["ajv", "ajv-formats", "i18next"].includes(d),
     );
     check(
-      "26. 仅引入 hono + @hono/node-server 两个新依赖",
-      newDeps.length === 2 && newDeps.includes("hono") && newDeps.includes("@hono/node-server"),
+      "26. 仅引入 hono + @hono/node-server 两个新依赖（Task 023 meilisearch 除外）",
+      newDeps.includes("hono") && newDeps.includes("@hono/node-server") &&
+        newDeps.every((d) => ["hono", "@hono/node-server", "meilisearch"].includes(d)),
       `newDeps=${JSON.stringify(newDeps)}`,
     );
   }

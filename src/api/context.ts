@@ -8,7 +8,8 @@
  */
 
 import { ModelRouter } from "../agents/model-router";
-import { LocalFileStore, createDefaultStore } from "../agents/opportunity-store";
+import type { OpportunityStore } from "../agents/opportunity-store";
+import { createStore } from "../agents/store-factory";
 import { StarManager } from "../agents/star-manager";
 import { ConversationManager } from "../agents/conversation-manager";
 import { createDefaultWatchStore } from "../watch/watch-store";
@@ -23,8 +24,8 @@ interface ConversationEntry {
 export interface AppContext {
   /** LLM 路由器 */
   modelRouter: ModelRouter;
-  /** 机会库（本地文件实现） */
-  store: LocalFileStore;
+  /** 机会库（按 STORE_TYPE 切换 local/meili） */
+  store: OpportunityStore;
   /** 收藏管理器 */
   starManager: StarManager;
   /** Watch Rules 存储 */
@@ -38,7 +39,7 @@ export interface AppContext {
  */
 export function createAppContext(): AppContext {
   const modelRouter = new ModelRouter();
-  const store = createDefaultStore();
+  const store = createStore();
   store.load();
   const starManager = new StarManager(store);
   const watchStore = createDefaultWatchStore();
