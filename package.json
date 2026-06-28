@@ -8,11 +8,15 @@
     "build": "tsc",
     "verify": "tsx scripts/verify-task019.ts",
     "integration-test": "tsx scripts/integration-test.ts",
-    "check:no-hardcode": "node scripts/check-no-hardcode.mjs"
+    "check:no-hardcode": "node scripts/check-no-hardcode.mjs",
+    "start": "tsx scripts/start-server.ts",
+    "verify:api": "tsx scripts/verify-task022.ts"
   },
   "dependencies": {
+    "@hono/node-server": "^1.13.0",
     "ajv": "^8.17.1",
     "ajv-formats": "^3.0.1",
+    "hono": "^4.6.0",
     "i18next": "^23.7.0"
   },
   "devDependencies": {
