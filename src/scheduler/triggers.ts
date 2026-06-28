@@ -19,6 +19,8 @@ import { generateReminders } from "../agents/reminder-engine";
 import { generateRadarReport } from "../agents/radar-report-generator";
 import type { RadarReportInput } from "../agents/radar-report-generator";
 import type { RadarRequirementSpec } from "../schema/radar-requirement-spec";
+import { notifyReminders } from "../notify/notify-sender";
+import type { NotifyChannel } from "../notify/channel-adapter";
 
 /**
  * 执行触发器。
@@ -103,6 +105,13 @@ async function executeReminderTrigger(
     if (levels.includes("expired")) totalReminders += result.expired.length;
   }
 
+  // 发送提醒到多渠道（Mock 模式不真实发送）
+  const notifyChannels = (params.notify_channels as string[]) ?? ["wechat"];
+  const notifyResults = await notifyReminders(
+    result,
+    notifyChannels as NotifyChannel[],
+  );
+
   return {
     total_reminders: totalReminders,
     urgent: result.urgent.length,
@@ -111,6 +120,8 @@ async function executeReminderTrigger(
     expired: result.expired.length,
     no_reminder: result.no_reminder.length,
     base_date: result.base_date,
+    notify_channels: notifyChannels,
+    notify_results: notifyResults,
   };
 }
 
@@ -199,7 +210,7 @@ function createSimpleSpec(radarType: string): RadarRequirementSpec {
       primary_goal: "找机会",
       secondary_goals: [],
       success_definition: "获得收益",
-      action_intent: ["报名"],
+      action_intent: ["报名比赛"],
       priority_order: ["价值"],
     },
     opportunity_scope: {
