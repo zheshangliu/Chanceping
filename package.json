@@ -16,7 +16,8 @@
     "verify:providers": "tsx scripts/verify-task026.ts",
     "verify:task027": "tsx scripts/verify-task027.ts",
     "verify:scheduler": "tsx scripts/verify-task028.ts",
-    "verify:notify": "tsx scripts/verify-task029.ts"
+    "verify:notify": "tsx scripts/verify-task029.ts",
+    "verify:review": "tsx scripts/verify-task030.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.0",

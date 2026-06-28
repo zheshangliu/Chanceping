@@ -10,6 +10,7 @@ import { reminderRoutes } from "./routes/reminders";
 import { watchRulesRoutes } from "./routes/watch-rules";
 import { reportRoutes } from "./routes/reports";
 import { schedulerRoutes } from "./routes/scheduler";
+import { reviewRoutes } from "./routes/review";
 import { webUiRoutes } from "./routes/web-ui";
 import type { ApiResponse } from "./types";
 
@@ -39,6 +40,7 @@ export function createApp(context?: AppContext): Hono {
   app.route("/api/watch-rules", watchRulesRoutes(ctx));
   app.route("/api/reports", reportRoutes(ctx));
   app.route("/api/scheduler", schedulerRoutes(ctx));
+  app.route("/api/review", reviewRoutes(ctx));
 
   // Web UI 静态文件服务（根路径）
   app.route("/", webUiRoutes());

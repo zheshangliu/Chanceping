@@ -11,12 +11,15 @@
 import type { CardVisibleLevel } from "./scoring-rules";
 import { t } from "../i18n/locales";
 
-/** 机会卡片状态 */
+/** 机会卡片状态（Task 030 扩展：+tracking/missed/expired） */
 export type OpportunityCardStatus =
   | "new"
   | "viewed"
+  | "tracking"
   | "saved"
   | "applied"
+  | "missed"
+  | "expired"
   | "archived"
   | "dismissed";
 
@@ -84,29 +87,40 @@ export type CardSource = "manual" | "search" | "user_supplied" | "rss";
 /**
  * 卡片状态合法转换表。
  *
- * 规则（Task 014 附录 A.1）：
- *   new → viewed, saved, archived, dismissed
- *   viewed → saved, applied, archived, dismissed
- *   saved → applied, archived, dismissed
+ * 规则（Task 030 扩展：+tracking/missed/expired）：
+ *   new → viewed, tracking, saved, applied, missed, expired, archived, dismissed
+ *   viewed → tracking, saved, applied, missed, expired, archived, dismissed
+ *   tracking → saved, applied, missed, expired, archived, dismissed
+ *   saved → applied, missed, expired, archived, dismissed
  *   applied → archived, dismissed
+ *   missed → archived, dismissed
+ *   expired → archived, dismissed
  *   archived → （终态，不可转出）
  *   dismissed → （终态，不可转出）
+ *
+ * 注：new/viewed 可转 missed/expired，因为 autoExpire/autoMiss 处理所有未报名状态。
  */
 export const CARD_STATUS_TRANSITIONS: Record<OpportunityCardStatus, OpportunityCardStatus[]> = {
-  new: ["viewed", "saved", "archived", "dismissed"],
-  viewed: ["saved", "applied", "archived", "dismissed"],
-  saved: ["applied", "archived", "dismissed"],
+  new: ["viewed", "tracking", "saved", "applied", "missed", "expired", "archived", "dismissed"],
+  viewed: ["tracking", "saved", "applied", "missed", "expired", "archived", "dismissed"],
+  tracking: ["saved", "applied", "missed", "expired", "archived", "dismissed"],
+  saved: ["applied", "missed", "expired", "archived", "dismissed"],
   applied: ["archived", "dismissed"],
+  missed: ["archived", "dismissed"],
+  expired: ["archived", "dismissed"],
   archived: [],
   dismissed: [],
 };
 
-/** 卡片状态中文名 */
+/** 卡片状态中文名（Task 030 扩展：+tracking/missed/expired） */
 export const CARD_STATUS_LABELS: Record<OpportunityCardStatus, string> = {
   new: "新发现",
   viewed: "已查看",
+  tracking: "跟踪中",
   saved: "已保存",
   applied: "已报名",
+  missed: "已错过",
+  expired: "已过期",
   archived: "已归档",
   dismissed: "已忽略",
 };
