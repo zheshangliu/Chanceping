@@ -14,7 +14,8 @@
     "verify:store": "tsx scripts/verify-task023.ts",
     "verify:web-ui": "tsx scripts/verify-task025.ts",
     "verify:providers": "tsx scripts/verify-task026.ts",
-    "verify:task027": "tsx scripts/verify-task027.ts"
+    "verify:task027": "tsx scripts/verify-task027.ts",
+    "verify:scheduler": "tsx scripts/verify-task028.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.0",
