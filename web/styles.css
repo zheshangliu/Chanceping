@@ -1,0 +1,598 @@
+/* ============================================================
+ * ChancePing Web UI 样式
+ * 来源：Task 025 第 5.3 节
+ *
+ * 暗色主题为主（data-theme="dark"），浅色主题通过切换 data-theme 实现
+ * 响应式布局：大屏左右分栏，小屏（<768px）上下堆叠
+ * ============================================================ */
+
+/* ============================================================
+ * CSS 变量色板
+ * ============================================================ */
+
+:root[data-theme="dark"] {
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --bg-tertiary: #0f3460;
+  --text-primary: #e0e0e0;
+  --text-secondary: #a0a0a0;
+  --text-muted: #666;
+  --accent: #e94560;
+  --accent-hover: #ff6b81;
+  --border: #2a2a4a;
+  --success: #4caf50;
+  --warning: #ff9800;
+  --error: #f44336;
+  --highlight-bg: #1e3a5f;
+  --syntax-keyword: #c792ea;
+  --syntax-operator: #89ddff;
+  --syntax-string: #c3e88d;
+  --syntax-comment: #546e7a;
+  --syntax-error: #ff5370;
+  --syntax-deadline: #26c6da;
+  --syntax-starred: #ffd700;
+  --syntax-region: #ff9800;
+}
+
+:root[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #e8e8e8;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --text-muted: #999;
+  --accent: #e94560;
+  --accent-hover: #c73650;
+  --border: #ddd;
+  --success: #4caf50;
+  --warning: #ff9800;
+  --error: #f44336;
+  --highlight-bg: #e3f2fd;
+  --syntax-keyword: #7c4dff;
+  --syntax-operator: #0277bd;
+  --syntax-string: #2e7d32;
+  --syntax-comment: #90a4ae;
+  --syntax-error: #c62828;
+  --syntax-deadline: #00838f;
+  --syntax-starred: #b8860b;
+  --syntax-region: #e65100;
+}
+
+/* ============================================================
+ * 基础重置
+ * ============================================================ */
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC",
+    "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.5;
+  transition: background-color 0.3s, color 0.3s;
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 13px;
+  transition: all 0.2s;
+}
+
+button:hover {
+  background-color: var(--bg-tertiary);
+  border-color: var(--accent);
+}
+
+button:active {
+  transform: translateY(1px);
+}
+
+textarea {
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 13px;
+}
+
+/* ============================================================
+ * 顶部导航栏
+ * ============================================================ */
+
+.top-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.brand {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+#theme-toggle {
+  font-size: 16px;
+  padding: 4px 8px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.status-indicator {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.status-indicator.online {
+  color: var(--success);
+}
+
+.status-indicator.offline {
+  color: var(--error);
+}
+
+/* ============================================================
+ * Tab 导航
+ * ============================================================ */
+
+.tab-nav {
+  display: flex;
+  gap: 4px;
+  padding: 0 20px;
+  background-color: var(--bg-secondary);
+  border-bottom: 1px solid var(--border);
+}
+
+.tab-btn {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  padding: 10px 16px;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.tab-btn:hover {
+  color: var(--text-primary);
+  background: transparent;
+  border-color: transparent;
+}
+
+.tab-btn.active {
+  color: var(--accent);
+  border-bottom-color: var(--accent);
+  background: transparent;
+}
+
+/* ============================================================
+ * Tab 内容区
+ * ============================================================ */
+
+.tab-content {
+  padding: 16px 20px;
+  min-height: calc(100vh - 100px);
+}
+
+.tab-panel {
+  display: none;
+}
+
+.tab-panel.active {
+  display: block;
+}
+
+.placeholder-panel {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+/* ============================================================
+ * 编辑器布局
+ * ============================================================ */
+
+.editor-layout {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.editor-pane,
+.preview-pane {
+  flex: 1;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.editor-header,
+.preview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.editor-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.editor-actions button {
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+/* ============================================================
+ * 编辑器容器（textarea + 语法高亮 overlay）
+ * ============================================================ */
+
+.editor-container {
+  position: relative;
+  height: 400px;
+  overflow: hidden;
+}
+
+.editor-highlight,
+.editor-textarea {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  padding: 12px;
+  font-family: "Consolas", "Monaco", "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  border: none;
+  outline: none;
+  resize: none;
+  overflow: auto;
+  tab-size: 2;
+}
+
+.editor-highlight {
+  margin: 0;
+  background-color: transparent;
+  color: var(--text-primary);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.editor-textarea {
+  background-color: transparent;
+  color: transparent;
+  caret-color: var(--text-primary);
+  z-index: 2;
+}
+
+.editor-textarea::placeholder {
+  color: var(--text-muted);
+}
+
+.editor-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 12px;
+  background-color: var(--bg-tertiary);
+  border-top: 1px solid var(--border);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* ============================================================
+ * 语法高亮颜色
+ * ============================================================ */
+
+.token-comment {
+  color: var(--syntax-comment);
+  font-style: italic;
+}
+
+.token-group {
+  color: var(--text-primary);
+  font-weight: bold;
+}
+
+.token-include {
+  color: var(--syntax-string);
+}
+
+.token-exclude {
+  color: var(--syntax-error);
+}
+
+.token-radar {
+  color: var(--syntax-operator);
+}
+
+.token-level {
+  color: var(--syntax-keyword);
+}
+
+.token-region {
+  color: var(--syntax-region);
+}
+
+.token-deadline {
+  color: var(--syntax-deadline);
+}
+
+.token-starred {
+  color: var(--syntax-starred);
+  font-weight: bold;
+}
+
+/* ============================================================
+ * 预览面板
+ * ============================================================ */
+
+.preview-content {
+  padding: 12px;
+  height: 400px;
+  overflow: auto;
+}
+
+.preview-content .placeholder {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 40px 0;
+}
+
+.preview-rule {
+  padding: 8px 10px;
+  margin-bottom: 6px;
+  background-color: var(--bg-primary);
+  border-left: 3px solid var(--accent);
+  border-radius: 2px;
+  font-size: 12px;
+}
+
+.preview-rule .rule-line {
+  color: var(--text-secondary);
+  font-family: monospace;
+}
+
+.preview-rule .rule-conditions {
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.preview-condition {
+  display: inline-block;
+  padding: 2px 6px;
+  background-color: var(--bg-tertiary);
+  border-radius: 2px;
+  font-size: 11px;
+  color: var(--text-primary);
+}
+
+.preview-error {
+  padding: 6px 10px;
+  margin-bottom: 6px;
+  background-color: rgba(244, 67, 54, 0.1);
+  border-left: 3px solid var(--error);
+  color: var(--error);
+  font-size: 12px;
+}
+
+.preview-group {
+  padding: 4px 10px;
+  margin-bottom: 6px;
+  color: var(--text-primary);
+  font-weight: bold;
+  border-bottom: 1px dashed var(--border);
+}
+
+/* ============================================================
+ * 测试面板
+ * ============================================================ */
+
+.test-panel {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.test-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background-color: var(--bg-tertiary);
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.test-body {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+}
+
+.test-input {
+  flex: 1;
+}
+
+.test-input label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.test-input textarea {
+  width: 100%;
+  padding: 10px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  resize: vertical;
+}
+
+.test-input textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.test-result {
+  flex: 1;
+  padding: 10px;
+  background-color: var(--bg-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  overflow: auto;
+  max-height: 220px;
+  font-size: 12px;
+}
+
+.test-result .placeholder {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 40px 0;
+}
+
+.test-result-item {
+  padding: 6px 8px;
+  margin-bottom: 4px;
+  border-radius: 2px;
+  border-left: 3px solid var(--border);
+}
+
+.test-result-item.matched {
+  background-color: rgba(76, 175, 80, 0.1);
+  border-left-color: var(--success);
+}
+
+.test-result-item.not-matched {
+  background-color: rgba(150, 150, 150, 0.05);
+  border-left-color: var(--text-muted);
+}
+
+.test-result-item .item-title {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.test-result-item .item-detail {
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+/* ============================================================
+ * Toast 提示
+ * ============================================================ */
+
+.toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  padding: 10px 16px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 1000;
+  max-width: 300px;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.toast.success {
+  border-left: 3px solid var(--success);
+}
+
+.toast.error {
+  border-left: 3px solid var(--error);
+}
+
+.toast.warning {
+  border-left: 3px solid var(--warning);
+}
+
+/* ============================================================
+ * 响应式布局
+ * ============================================================ */
+
+@media (max-width: 768px) {
+  .top-bar {
+    padding: 8px 12px;
+  }
+
+  .brand {
+    font-size: 16px;
+  }
+
+  .tab-nav {
+    padding: 0 12px;
+    overflow-x: auto;
+  }
+
+  .tab-btn {
+    padding: 8px 12px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .tab-content {
+    padding: 12px;
+  }
+
+  .editor-layout {
+    flex-direction: column;
+  }
+
+  .test-body {
+    flex-direction: column;
+  }
+
+  .editor-container {
+    height: 300px;
+  }
+
+  .preview-content {
+    height: 200px;
+  }
+}

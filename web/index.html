@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ChancePing 盯一下 - Watch Rules 编辑器</title>
+  <link rel="stylesheet" href="/styles.css">
+</head>
+<body>
+  <!-- 顶部导航栏 -->
+  <header class="top-bar">
+    <h1 class="brand">ChancePing 盯一下</h1>
+    <div class="header-actions">
+      <button id="theme-toggle" title="切换主题 (暗色/浅色)">🌙</button>
+      <span class="status-indicator" id="api-status" title="API 连接状态">●</span>
+    </div>
+  </header>
+
+  <!-- Tab 导航 -->
+  <nav class="tab-nav">
+    <button class="tab-btn active" data-tab="editor">编辑器</button>
+    <button class="tab-btn" data-tab="opportunities">机会库</button>
+    <button class="tab-btn" data-tab="search">搜索</button>
+    <button class="tab-btn" data-tab="reports">报告</button>
+  </nav>
+
+  <!-- Tab 内容区 -->
+  <main class="tab-content">
+    <!-- Tab 1: 编辑器 -->
+    <section class="tab-panel active" id="panel-editor">
+      <div class="editor-layout">
+        <div class="editor-pane">
+          <div class="editor-header">
+            <span>DSL 规则编辑器</span>
+            <div class="editor-actions">
+              <button id="btn-save" title="保存 (Ctrl+S)">保存</button>
+              <button id="btn-clear" title="清空规则">清空</button>
+            </div>
+          </div>
+          <div class="editor-container" id="editor-container">
+            <pre class="editor-highlight" id="editor-highlight" aria-hidden="true"></pre>
+            <textarea class="editor-textarea" id="editor-textarea"
+              spellcheck="false"
+              placeholder="输入 Watch Rules DSL 规则...
+示例：
++AI 比赛
+!内测
+@ai_competition
+#S A
+$北京
+%7
+*"></textarea>
+          </div>
+          <div class="editor-footer">
+            <span class="hint">快捷键：Ctrl+S 保存 | Ctrl+Enter 测试 | Ctrl+/ 注释 | Ctrl+D 复制行</span>
+            <span class="line-info" id="line-info">行 1, 列 1</span>
+          </div>
+        </div>
+        <div class="preview-pane">
+          <div class="preview-header">实时解析预览</div>
+          <div class="preview-content" id="preview-content">
+            <p class="placeholder">输入规则后实时预览解析结果</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- 规则测试面板 -->
+      <div class="test-panel">
+        <div class="test-header">
+          <span>规则测试</span>
+          <button id="btn-test" title="运行测试 (Ctrl+Enter)">运行测试</button>
+        </div>
+        <div class="test-body">
+          <div class="test-input">
+            <label for="test-mock-data">Mock 机会数据（JSON 格式）</label>
+            <textarea id="test-mock-data" spellcheck="false" rows="8" placeholder='[
+  {
+    "title": "2026全球AI创新大赛",
+    "type": "比赛",
+    "organizer": "AI协会",
+    "region": "北京",
+    "deadline": "2026-07-15",
+    "visible_level": "A"
+  }
+]'></textarea>
+          </div>
+          <div class="test-result" id="test-result">
+            <p class="placeholder">点击"运行测试"查看匹配结果</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 2: 机会库 -->
+    <section class="tab-panel" id="panel-opportunities">
+      <div class="placeholder-panel">
+        <p>机会库面板（V1.0 完善）</p>
+        <div id="opportunities-list"></div>
+      </div>
+    </section>
+
+    <!-- Tab 3: 搜索 -->
+    <section class="tab-panel" id="panel-search">
+      <div class="placeholder-panel">
+        <p>搜索面板（V1.0 完善）</p>
+      </div>
+    </section>
+
+    <!-- Tab 4: 报告 -->
+    <section class="tab-panel" id="panel-reports">
+      <div class="placeholder-panel">
+        <p>报告面板（V1.0 完善）</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- Toast 提示 -->
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="/watch-rules-editor.js"></script>
+</body>
+</html>

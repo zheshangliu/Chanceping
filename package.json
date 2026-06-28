@@ -11,7 +11,8 @@
     "check:no-hardcode": "node scripts/check-no-hardcode.mjs",
     "start": "tsx scripts/start-server.ts",
     "verify:api": "tsx scripts/verify-task022.ts",
-    "verify:store": "tsx scripts/verify-task023.ts"
+    "verify:store": "tsx scripts/verify-task023.ts",
+    "verify:web-ui": "tsx scripts/verify-task025.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.0",
