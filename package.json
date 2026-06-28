@@ -1,8 +1,8 @@
 {
   "name": "chanceping",
-  "version": "0.8.0",
+  "version": "0.9.0",
   "private": true,
-  "description": "盯一下 ChancePing - AI 机会情报系统（V0.8 搜索层 + LLM 版）",
+  "description": "盯一下 ChancePing - AI 机会情报系统（V0.9 存储 + 搜索集成 + Web UI + 多 Provider 版）",
   "scripts": {
     "typecheck": "tsc --noEmit",
     "build": "tsc",
@@ -13,7 +13,8 @@
     "verify:api": "tsx scripts/verify-task022.ts",
     "verify:store": "tsx scripts/verify-task023.ts",
     "verify:web-ui": "tsx scripts/verify-task025.ts",
-    "verify:providers": "tsx scripts/verify-task026.ts"
+    "verify:providers": "tsx scripts/verify-task026.ts",
+    "verify:task027": "tsx scripts/verify-task027.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.0",

@@ -784,11 +784,13 @@ async function main(): Promise<void> {
     // 019e 的 1 个文件（自身）
     check("019e: verify-task019.ts 存在", fs.existsSync(path.join(cwd, "scripts/verify-task019.ts")));
 
-    // package.json version=0.8.0
+    // package.json version >= 0.8.0（V0.9+ 兼容）
     const pkgContent = fs.readFileSync(path.join(cwd, "package.json"), "utf-8");
     const pkg = JSON.parse(pkgContent);
-    check("package.json: version = 0.8.0", pkg.version === "0.8.0", `version=${pkg.version}`);
-    check("package.json: description 含 V0.8", typeof pkg.description === "string" && pkg.description.includes("V0.8"));
+    const versionParts = String(pkg.version ?? "").split(".").map((n: string) => parseInt(n, 10) || 0);
+    const versionNum = versionParts.length >= 3 ? versionParts[0] * 10000 + versionParts[1] * 100 + versionParts[2] : (versionParts.length === 2 ? versionParts[0] * 10000 + versionParts[1] * 100 : 0);
+    check("package.json: version >= 0.8.0", versionNum >= 800, `version=${pkg.version}`);
+    check("package.json: description 含 V0.8 或 V0.9", typeof pkg.description === "string" && (pkg.description.includes("V0.8") || pkg.description.includes("V0.9")));
     check("package.json: scripts.verify 指向 verify-task019.ts",
       pkg.scripts?.verify === "tsx scripts/verify-task019.ts", `verify=${pkg.scripts?.verify}`);
 
