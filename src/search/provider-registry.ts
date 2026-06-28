@@ -20,6 +20,9 @@
 
 import type { SearchResult, SearchOptions } from "./types";
 import { SerperProvider } from "./providers/serper";
+import { BochaProvider } from "./providers/bocha";
+import { ExaProvider } from "./providers/exa";
+import { GoogleCseProvider } from "./providers/google-cse";
 
 /** provider 可靠性评级（对接 Admiralty Code） */
 export type ReliabilityGrade = "A" | "B" | "C" | "D" | "F";
@@ -127,3 +130,8 @@ export const providerRegistry: ProviderRegistry = new ProviderRegistry();
 
 // 自动注册 SerperProvider（无 SERPER_API_KEY 时为 Mock 模式，不影响注册）
 providerRegistry.register(new SerperProvider());
+
+// 自动注册 3 个新 Provider（Task 026 新增）
+providerRegistry.register(new BochaProvider());
+providerRegistry.register(new ExaProvider());
+providerRegistry.register(new GoogleCseProvider());

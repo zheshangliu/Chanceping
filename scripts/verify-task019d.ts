@@ -606,19 +606,18 @@ async function main(): Promise<void> {
       },
     });
     const result = await orchestrator.search(spec);
-    // 注意：inferRadarType 默认 ai_competition，所以 SerperProvider 仍可用
-    // 要测试无 provider，需要 unregister serper
-    // 改用直接 unregister 的方式
-    const savedProvider = providerRegistry.get("serper");
-    providerRegistry.unregister("serper");
+    // 注意：Task 026 后注册表含 4 个 Provider，需全部注销才能测试"无可用 provider"
+    const savedNames = ["serper", "bocha", "exa", "google_cse"];
+    const savedProviders = savedNames
+      .map((n) => providerRegistry.get(n))
+      .filter((p): p is NonNullable<typeof p> => p !== undefined);
+    savedNames.forEach((n) => providerRegistry.unregister(n));
     const result2 = await orchestrator.search(spec);
     check("无可用 provider：opportunities 为空", result2.opportunities.length === 0);
     check("无可用 provider：errors 含记录", result2.errors.length > 0);
     check("无可用 provider：total_raw = 0", result2.total_raw === 0);
     // 恢复
-    if (savedProvider) {
-      providerRegistry.register(savedProvider);
-    }
+    savedProviders.forEach((p) => providerRegistry.register(p));
   }
 
   // enableContentFetch=false 时跳过抓取，relevance 固定 50

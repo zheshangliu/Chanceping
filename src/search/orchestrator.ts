@@ -26,6 +26,7 @@ import { providerRegistry } from "./provider-registry";
 import { ruleFilter } from "./rule-filter";
 import { aiFilter, type AIFilterItem } from "./ai-filter";
 import { scoreOpportunities } from "./opportunity-scorer";
+import { deduplicateByUrL } from "./radar-router";
 
 /** 搜索编排器配置 */
 export interface SearchOrchestratorConfig {
@@ -37,6 +38,8 @@ export interface SearchOrchestratorConfig {
   minRelevance?: number;
   /** 是否抓取正文，默认 true */
   enableContentFetch?: boolean;
+  /** Jina Reader 抓取模式：true=Mock内容（默认），false=真实抓取 */
+  mockContent?: boolean;
 }
 
 /** 搜索编排器结果 */
@@ -132,12 +135,14 @@ export class SearchOrchestrator {
   private readonly maxResultsPerProvider: number;
   private readonly minRelevance: number;
   private readonly enableContentFetch: boolean;
+  private readonly mockContent: boolean;
 
   constructor(config: SearchOrchestratorConfig) {
     this.llmAdapter = config.llmAdapter;
     this.maxResultsPerProvider = config.maxResultsPerProvider ?? DEFAULT_MAX_RESULTS_PER_PROVIDER;
     this.minRelevance = config.minRelevance ?? DEFAULT_MIN_RELEVANCE;
     this.enableContentFetch = config.enableContentFetch ?? true;
+    this.mockContent = config.mockContent ?? true;
   }
 
   /**
@@ -195,7 +200,7 @@ export class SearchOrchestrator {
     }
 
     // 合并搜索结果
-    const rawResults: SearchResult[] = providerResults.flatMap((r) => r.results);
+    const rawResults: SearchResult[] = deduplicateByUrL(providerResults.flatMap((r) => r.results));
 
     // 边界情况：无搜索结果
     if (rawResults.length === 0) {
@@ -231,6 +236,7 @@ export class SearchOrchestrator {
     if (this.enableContentFetch) {
       const aiResult = await aiFilter(ruleResult.passed, spec, this.llmAdapter, {
         minRelevance: this.minRelevance,
+        mockContent: this.mockContent,
       });
       aiPassed = aiResult.passed;
     } else {
