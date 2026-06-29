@@ -24,6 +24,7 @@
     <button class="tab-btn" data-tab="search">搜索</button>
     <button class="tab-btn" data-tab="opportunities">机会库</button>
     <button class="tab-btn" data-tab="reports">报告</button>
+    <button class="tab-btn" data-tab="radars">我的雷达</button>
     <button class="tab-btn" data-tab="editor">编辑器</button>
   </nav>
 
@@ -240,7 +241,26 @@
       </div>
     </section>
 
-    <!-- Tab 6: 编辑器 -->
+    <!-- Tab 6: 我的雷达（V1.5-04 新增） -->
+    <section class="tab-panel" id="panel-radars">
+      <!-- 雷达列表视图 -->
+      <div class="radars-list-view" id="radars-list-view">
+        <div class="radars-toolbar">
+          <h3>我的雷达</h3>
+          <button class="btn-primary" id="btn-create-radar">+ 创建雷达</button>
+        </div>
+        <div class="radar-cards-grid" id="radar-cards-grid">
+          <p class="placeholder">点击"创建雷达"或刷新加载雷达列表</p>
+        </div>
+        <button class="btn-refresh" id="btn-refresh-radars">刷新列表</button>
+      </div>
+      <!-- 雷达详情视图（默认隐藏，点击详情后显示） -->
+      <div class="radar-detail-view" id="radar-detail-view" style="display:none;">
+        <!-- 由 radar-detail.js 动态填充 -->
+      </div>
+    </section>
+
+    <!-- Tab 7: 编辑器 -->
     <section class="tab-panel" id="panel-editor">
       <div class="editor-layout">
         <div class="editor-pane">
@@ -315,5 +335,7 @@ $北京
   <script src="/opportunities.js"></script>
   <script src="/reports.js"></script>
   <script src="/watch-rules-editor.js"></script>
+  <script src="/radars.js"></script>
+  <script src="/radar-detail.js"></script>
 </body>
 </html>

@@ -2208,3 +2208,464 @@ textarea {
   font-weight: 600;
   border-radius: 4px;
 }
+
+/* ============================================================
+ * Task V1.5-04: 我的雷达 UI 样式
+ * 包含：雷达卡片 / 类型徽章 / 内置角标 / 状态圆点 /
+ *       详情页分区 / 运行结果 / 运行历史 / 创建对话框
+ * ============================================================ */
+
+/* 我的雷达 - 列表视图容器 */
+.radars-list-view {
+  padding: 20px;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.radars-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.radars-toolbar h3 {
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+/* 雷达卡片网格 */
+.radar-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+/* 单个雷达卡片 */
+.radar-card {
+  position: relative;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.radar-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.radar-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.radar-name {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 2px 0;
+  word-break: break-word;
+}
+
+.radar-providers {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.radar-last-run {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* 类型徽章 */
+.radar-kind-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 3px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+.radar-kind-badge.kind-ai_competition {
+  color: var(--accent);
+}
+
+.radar-kind-badge.kind-opc_policy {
+  color: var(--syntax-deadline);
+}
+
+.radar-kind-badge.kind-cultural_heritage {
+  color: var(--success);
+}
+
+.radar-kind-badge.kind-custom {
+  color: var(--warning);
+}
+
+/* 内置角标（右上角小标签） */
+.builtin-tag {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 600;
+  background-color: var(--accent);
+  color: #fff;
+  border-radius: 2px;
+  letter-spacing: 0.5px;
+}
+
+/* 状态圆点 */
+.radar-status-dot {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  vertical-align: middle;
+  margin-left: 8px;
+}
+
+/* 状态颜色：draft 灰 / active 绿 / paused 黄 / archived 红 */
+.radar-status-dot.status-draft {
+  background-color: #888;
+}
+
+.radar-status-dot.status-active {
+  background-color: var(--success);
+}
+
+.radar-status-dot.status-paused {
+  background-color: var(--warning);
+}
+
+.radar-status-dot.status-archived {
+  background-color: var(--error);
+}
+
+.radar-status-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 4px;
+}
+
+/* 详情/刷新按钮 */
+.btn-detail {
+  margin-top: 8px;
+  padding: 6px 12px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  align-self: flex-start;
+}
+
+.btn-detail:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+#btn-refresh-radars {
+  margin-top: 12px;
+}
+
+/* ============================================================
+ * 雷达详情页样式
+ * ============================================================ */
+
+.radar-detail-view {
+  padding: 20px;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.radar-detail-container {
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+.radar-detail-topbar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.btn-back {
+  padding: 6px 12px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn-back:hover {
+  border-color: var(--accent);
+}
+
+.radar-detail-title {
+  font-size: 18px;
+  color: var(--text-primary);
+}
+
+.radar-detail-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.radar-detail-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.radar-detail-actions button {
+  padding: 6px 14px;
+  font-size: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.radar-detail-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-activate,
+.btn-run {
+  background-color: var(--accent);
+  color: #fff;
+  border: none;
+}
+
+.btn-activate:not(:disabled):hover,
+.btn-run:not(:disabled):hover {
+  background-color: var(--accent-hover);
+}
+
+.btn-edit,
+.btn-archive {
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+}
+
+.btn-edit:not(:disabled):hover,
+.btn-archive:not(:disabled):hover {
+  border-color: var(--accent);
+}
+
+/* 详情页分区 */
+.radar-detail-section {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.radar-detail-section h4 {
+  font-size: 14px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.radar-detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.info-row {
+  display: flex;
+  align-items: flex-start;
+  font-size: 13px;
+}
+
+.info-label {
+  width: 100px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.info-value {
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+/* 运行结果区 */
+.radar-run-result {
+  background-color: var(--bg-tertiary);
+  padding: 12px;
+  border-radius: 4px;
+}
+
+#radar-run-result-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 运行历史区 */
+.radar-run-history {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* ============================================================
+ * 创建雷达对话框（Modal）
+ * ============================================================ */
+
+.create-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1000;
+}
+
+.create-modal-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+}
+
+.create-modal-dialog {
+  position: relative;
+  width: 90%;
+  max-width: 440px;
+  margin: 80px auto 0;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+.create-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.create-modal-header h3 {
+  font-size: 16px;
+  color: var(--text-primary);
+}
+
+.create-modal-close {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 24px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 4px;
+}
+
+.create-modal-close:hover {
+  color: var(--accent);
+}
+
+.create-modal-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.create-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.create-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.required {
+  color: var(--error);
+}
+
+.create-field input[type="text"],
+.create-field select {
+  padding: 8px 10px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+}
+
+.create-field input[type="text"]:focus,
+.create-field select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.create-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.btn-cancel {
+  padding: 8px 16px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.btn-cancel:hover {
+  border-color: var(--text-secondary);
+}
+
+/* 响应式：小屏堆叠 */
+@media (max-width: 768px) {
+  .radar-cards-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .radar-detail-actions {
+    margin-left: 0;
+    flex-wrap: wrap;
+  }
+
+  .radar-detail-topbar {
+    flex-wrap: wrap;
+  }
+}
