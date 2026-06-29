@@ -14,6 +14,8 @@ import { createStore } from "../agents/store-factory";
 import { StarManager } from "../agents/star-manager";
 import { ConversationManager } from "../agents/conversation-manager";
 import { createDefaultWatchStore } from "../watch/watch-store";
+import type { FileParser } from "../schema/user-input-source";
+import { FileParserRouter } from "../search/file-parser-router";
 
 /** 会话池中的条目 */
 interface ConversationEntry {
@@ -33,6 +35,8 @@ export interface AppContext {
   watchStore: ReturnType<typeof createDefaultWatchStore>;
   /** 会话管理器池（conversation_id → ConversationManager） */
   conversations: Map<string, ConversationEntry>;
+  /** V1.3 新增：文件解析器（文件上传功能） */
+  fileParser?: FileParser;
 }
 
 /**
@@ -55,5 +59,6 @@ export function createAppContext(): AppContext {
     starManager,
     watchStore,
     conversations: new Map(),
+    fileParser: new FileParserRouter(),
   };
 }

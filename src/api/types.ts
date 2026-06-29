@@ -38,6 +38,8 @@ export interface ChatRequest {
   radar_type?: "ai_competition" | "opc_policy" | "cultural_heritage";
   /** 会话 ID（可选，不传则新建会话） */
   conversation_id?: string;
+  /** V1.3 新增：上传文件解析后的文本（可选，追加到 message 末尾） */
+  uploaded_text?: string;
 }
 
 /** 搜索请求 */

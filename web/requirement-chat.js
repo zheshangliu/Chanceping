@@ -347,6 +347,10 @@
       dimsList.innerHTML = renderDimensions(data.confidence);
     }
 
+    // V1.3 新增：附件按钮绑定
+    bindAttachButton("chat-attach-btn", input);
+    bindAttachButton("home-attach-btn", document.getElementById("home-input"));
+
     // 开始搜索按钮
     const searchBtn = document.getElementById("start-search-btn");
     if (searchBtn) {

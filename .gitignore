@@ -45,3 +45,4 @@ coverage/
 
 # TRAE IDE 元数据
 .trae/
+.task-e-backup/

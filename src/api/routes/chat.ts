@@ -40,7 +40,12 @@ export function chatRoutes(ctx: AppContext): Hono {
         convEntry = { manager, radar_type: radarType };
         ctx.conversations.set(conversationId, convEntry);
       }
-      const turn = await convEntry.manager.processUserInput(body.message);
+      // V1.3 新增：合并上传文件解析文本
+      const uploadedText = body.uploaded_text?.trim();
+      const fullMessage = uploadedText
+        ? `${body.message}\n\n[上传文件内容]\n${uploadedText}`
+        : body.message;
+      const turn = await convEntry.manager.processUserInput(fullMessage);
       return c.json({
         success: true,
         data: { ...turn, conversation_id: conversationId },
