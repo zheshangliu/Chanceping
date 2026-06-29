@@ -40,6 +40,8 @@ export interface ChatRequest {
   conversation_id?: string;
   /** V1.3 新增：上传文件解析后的文本（可选，追加到 message 末尾） */
   uploaded_text?: string;
+  /** V1.4 新增：用户动作类型（默认 answer） */
+  user_action?: "answer" | "skip_question" | "use_default" | "generate_draft_now";
 }
 
 /** 搜索请求 */

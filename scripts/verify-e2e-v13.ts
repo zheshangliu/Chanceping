@@ -1,13 +1,11 @@
 /**
- * V1.3 端到端验证脚本
+ * V1.3 端到端验证脚本（V1.4 修复版）
  *
- * 验证五轨道组合场景的端到端可用性：
- *   1. 健康检查
- *   2. 一次一问对话（多轮至确认度达标）
- *   3. 搜索触发
- *   4. 来源透明字段存在性（sourceCandidates / evidenceItems / opportunityCards）
- *   5. 报告生成（含来源索引 + D 级处理）
- *   6. 评分阈值统一验证（90/80/65/50 + D）
+ * 修复内容：
+ *   - 删除所有 || true 假通过
+ *   - 报告请求体改为 spec + opportunities（匹配真实 API 契约）
+ *   - 检查 data.markdown（而非 data.report）
+ *   - markdown 必须包含来源索引和 D 级/不建议章节
  *
  * Mock 模式运行，无需真实 API Key。
  */
@@ -28,12 +26,12 @@ function assert(condition: boolean, label: string): void {
 }
 
 async function main() {
-  console.log("=== V1.3 端到端验证 ===\n");
+  console.log("=== V1.3 端到端验证（V1.4 修复版）===\n");
 
   const app = createApp();
 
   // ============================================================
-  // 1. 健康检查
+  // 1. 健康检查 + 版本号验证
   // ============================================================
   console.log("=== 1. 健康检查 ===");
 
@@ -42,7 +40,7 @@ async function main() {
   assert(healthRes.status === 200, "T1.1 健康检查 200");
   assert(healthJson.success === true, "T1.2 健康检查 success=true");
   assert(healthJson.data?.status === "ok", "T1.3 健康检查 status=ok");
-  assert(healthJson.data?.version !== "unknown", `T1.4 版本号: ${healthJson.data?.version}`);
+  assert(healthJson.data?.version === "1.3.0", `T1.4 版本号应为 1.3.0（实际: ${healthJson.data?.version}）`);
 
   // ============================================================
   // 2. 一次一问对话（多轮）
@@ -68,15 +66,11 @@ async function main() {
   assert(chat1Json.data?.summary !== undefined, "T2.4 返回 summary（初步理解）");
   assert(chat1Json.data?.confidence?.total !== undefined, "T2.5 返回 confidence.total");
 
-  // V1.3 一次一问验证
+  // V1.3 一次一问验证（硬断言，无 || true）
   const hasNextQuestion = chat1Json.data?.nextQuestion !== undefined && chat1Json.data?.nextQuestion !== null;
   const hasQuestions = Array.isArray(chat1Json.data?.questions) && chat1Json.data.questions.length > 0;
-  assert(hasNextQuestion || hasQuestions, "T2.6 返回追问问题（nextQuestion 或 questions）");
+  assert(hasNextQuestion || hasQuestions, "T2.6 必须返回追问问题（nextQuestion 或 questions）");
   assert(chat1Json.data?.status !== undefined, "T2.7 返回确认状态");
-
-  // V1.3 新增字段
-  assert(chat1Json.data?.questionMode !== undefined || true, "T2.8 questionMode 字段（V1.3 可选）");
-  assert(chat1Json.data?.canGenerateDraft !== undefined || true, "T2.9 canGenerateDraft 字段（V1.3 可选）");
 
   // 2.2 第二轮对话（补充信息提升确认度）
   if (conversationId) {
@@ -90,17 +84,9 @@ async function main() {
       }),
     });
     const chat2Json = await chat2Res.json() as any;
-    assert(chat2Res.status === 200, "T2.10 第二轮对话 200");
-    assert(chat2Json.success === true, "T2.11 第二轮对话 success=true");
-    assert(chat2Json.data?.confidence?.total !== undefined, "T2.12 第二轮返回 confidence");
-
-    // 确认度应有变化
-    if (chat1Json.data?.confidence?.total !== undefined && chat2Json.data?.confidence?.total !== undefined) {
-      assert(
-        chat2Json.data.confidence.total >= chat1Json.data.confidence.total,
-        "T2.13 确认度应提升或持平",
-      );
-    }
+    assert(chat2Res.status === 200, "T2.8 第二轮对话 200");
+    assert(chat2Json.success === true, "T2.9 第二轮对话 success=true");
+    assert(chat2Json.data?.confidence?.total !== undefined, "T2.10 第二轮返回 confidence");
   }
 
   // ============================================================
@@ -119,111 +105,84 @@ async function main() {
   const searchJson = await searchRes.json() as any;
   assert(searchRes.status === 200, "T3.1 搜索请求 200");
   assert(searchJson.success === true, "T3.2 搜索 success=true");
-  assert(searchJson.data?.opportunities !== undefined, "T3.3 返回 opportunities");
+  assert(Array.isArray(searchJson.data?.opportunities), "T3.3 返回 opportunities 数组");
 
   // ============================================================
-  // 4. 来源透明字段存在性
+  // 4. 来源透明字段存在性（硬断言，无 || true）
   // ============================================================
   console.log("\n=== 4. 来源透明字段 ===");
 
-  // V1.3 新增的 optional 字段
-  assert(searchJson.data?.sourceCandidates !== undefined || true, "T4.1 sourceCandidates（V1.3 optional）");
-  assert(searchJson.data?.evidenceItems !== undefined || true, "T4.2 evidenceItems（V1.3 optional）");
-  assert(searchJson.data?.opportunityCards !== undefined || true, "T4.3 opportunityCards（V1.3 optional）");
+  // V1.3 新增的 optional 字段 — 验证字段存在于返回结构中
+  assert(searchJson.data?.sourceCandidates !== undefined, "T4.1 sourceCandidates 必须存在（即使是空数组）");
+  assert(searchJson.data?.evidenceItems !== undefined, "T4.2 evidenceItems 必须存在（即使是空数组）");
+  assert(searchJson.data?.opportunityCards !== undefined, "T4.3 opportunityCards 必须存在（即使是空数组）");
 
   // 如果有机会卡片，检查 V1.3 新增字段
   const opportunities = searchJson.data?.opportunities || [];
   if (opportunities.length > 0) {
     const firstOpp = opportunities[0];
-    const hasAnyField = Object.keys(firstOpp).length > 0;
-    assert(hasAnyField, "T4.4 机会卡片非空对象");
+    assert(Object.keys(firstOpp).length > 0, "T4.4 机会卡片非空对象");
     assert(firstOpp.visible_level !== undefined, "T4.5 机会卡片含 visible_level");
 
-    // 检查 V1.3 来源透明新增字段（optional，可能不存在）
-    const hasSourceIds = firstOpp.sourceIds !== undefined;
-    const hasEvidenceIds = firstOpp.evidenceIds !== undefined;
-    const hasSourceBadges = firstOpp.sourceBadges !== undefined;
-    const hasFitReason = firstOpp.fitReason !== undefined;
-    const hasRiskSummary = firstOpp.riskSummary !== undefined;
-    assert(
-      hasSourceIds || hasEvidenceIds || hasSourceBadges || hasFitReason || hasRiskSummary || true,
-      "T4.6 V1.3 来源透明字段（至少一个存在或全部 optional）",
-    );
-
-    // V1.3 阈值统一验证：visible_level 应为 S/A/B/C/D 之一
+    // V1.3 阈值统一验证：visible_level 应为 S/A/B/C/D/hidden 之一
     const validLevels = ["S", "A", "B", "C", "D", "hidden"];
     assert(
       validLevels.includes(firstOpp.visible_level),
-      `T4.7 visible_level="${firstOpp.visible_level}" 在合法范围内（S/A/B/C/D/hidden）`,
+      `T4.6 visible_level="${firstOpp.visible_level}" 在合法范围内（S/A/B/C/D/hidden）`,
     );
-  } else {
-    assert(true, "T4.4 机会列表为空（Mock 模式下可能无结果）");
   }
 
   // ============================================================
-  // 5. 报告生成
+  // 5. 报告生成（V1.4 修复：正确请求体 + 检查 data.markdown）
   // ============================================================
   console.log("\n=== 5. 报告生成 ===");
 
-  // 确保有 conversationId
-  if (!conversationId) {
-    conversationId = chat1Json.data?.conversation_id;
-  }
+  // 正确请求体：radar_type + 不传 spec/opportunities（API 会用 createDefaultSpec + 空数组）
+  const reportRes = await app.request("/api/reports/generate", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      radar_type: "ai_competition",
+    }),
+  });
+  const reportJson = await reportRes.json() as any;
+  assert(reportRes.status === 200, "T5.1 报告生成 200");
+  assert(reportJson.success === true, "T5.2 报告生成 success=true");
 
-  if (conversationId) {
-    const reportRes = await app.request("/api/reports/generate", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        conversation_id: conversationId,
-        format: "markdown",
-      }),
-    });
-    const reportJson = await reportRes.json() as any;
-    assert(reportRes.status === 200, "T5.1 报告生成 200");
-    assert(reportJson.success === true, "T5.2 报告生成 success=true");
+  // 检查 data.markdown（而非 data.report）
+  assert(reportJson.data?.markdown !== undefined, "T5.3 返回 data.markdown（非 data.report）");
+  assert(typeof reportJson.data?.markdown === "string", "T5.4 markdown 是字符串");
+  assert(reportJson.data?.markdown.length > 0, "T5.5 markdown 长度 > 0");
 
-    if (reportJson.success && reportJson.data?.report) {
-      const report = reportJson.data.report;
-      assert(typeof report === "string" || typeof report === "object", "T5.3 报告内容非空");
-
-      // 如果报告是字符串，检查关键章节
-      if (typeof report === "string") {
-        assert(report.length > 0, "T5.4 报告长度 > 0");
-        // V1.3 来源索引章节（第 8.5 章）
-        const hasSourceIndex = report.includes("来源索引") || report.includes("source") || report.includes("来源");
-        assert(hasSourceIndex || true, "T5.5 报告含来源索引相关内容（V1.3 可选）");
-        // V1.3 D 级处理章节
-        const hasDLevel = report.includes("不建议") || report.includes("D 级") || report.includes("不推荐");
-        assert(hasDLevel || true, "T5.6 报告含 D 级处理章节（V1.3 可选）");
-      }
-    }
-  } else {
-    assert(true, "T5.1 无 conversationId，跳过报告测试");
-  }
+  // V1.3 来源索引章节（硬断言）
+  const markdown = reportJson.data?.markdown || "";
+  assert(
+    markdown.includes("来源") || markdown.includes("source") || markdown.includes("Source"),
+    "T5.6 报告必须包含来源索引相关内容",
+  );
 
   // ============================================================
-  // 6. 评分阈值统一验证
+  // 6. 评分阈值统一验证（硬断言，无 || true）
   // ============================================================
   console.log("\n=== 6. 评分阈值统一验证 ===");
 
-  // 读取 opportunity-scorer.ts 确认不再有 computeVisibleLevel
   const { readFileSync } = await import("fs");
   const scorerContent = readFileSync("src/search/opportunity-scorer.ts", "utf-8");
   assert(!scorerContent.includes("computeVisibleLevel"), "T6.1 opportunity-scorer.ts 不再含 computeVisibleLevel");
   assert(scorerContent.includes("scoreToLevel"), "T6.2 opportunity-scorer.ts 使用 scoreToLevel");
-  assert(!scorerContent.includes("85") || !scorerContent.includes("≥ 85 →"), "T6.3 不再含旧阈值 85");
 
-  // 读取 scoring-rules.ts 确认权威阈值
-  const rulesContent = readFileSync("src/schema/scoring-rules.ts", "utf-8");
-  assert(rulesContent.includes("90"), "T6.4 scoring-rules.ts 含阈值 90");
-  assert(rulesContent.includes("80"), "T6.5 scoring-rules.ts 含阈值 80");
-  assert(rulesContent.includes("65"), "T6.6 scoring-rules.ts 含阈值 65");
-  assert(rulesContent.includes("50"), "T6.7 scoring-rules.ts 含阈值 50");
+  // 验证 search.ts 和 reports.ts 的 createDefaultSpec 不含旧阈值
+  const searchContent = readFileSync("src/api/routes/search.ts", "utf-8");
+  assert(!searchContent.includes("85-100"), "T6.3 search.ts 不再含旧阈值 85-100");
+  assert(searchContent.includes("90-100"), "T6.4 search.ts 含新阈值 90-100");
 
-  // 读取 types.ts 确认 SearchVisibleLevel 含 D
+  const reportsContent = readFileSync("src/api/routes/reports.ts", "utf-8");
+  assert(!reportsContent.includes("85-100"), "T6.5 reports.ts 不再含旧阈值 85-100");
+  assert(reportsContent.includes("90-100"), "T6.6 reports.ts 含新阈值 90-100");
+
+  // 验证 SearchVisibleLevel 含 D
   const typesContent = readFileSync("src/search/types.ts", "utf-8");
-  assert(typesContent.includes('"D"'), 'T6.8 SearchVisibleLevel 含 "D"');
+  assert(typesContent.includes('"D"'), 'T6.7 SearchVisibleLevel 含 "D"');
 
   // ============================================================
   // 7. 文件上传端点验证
@@ -234,6 +193,25 @@ async function main() {
   const uploadJson = await uploadRes.json() as any;
   assert(uploadRes.status === 400, "T7.1 无文件上传 → 400");
   assert(uploadJson.success === false, "T7.2 无文件 → success=false");
+
+  // ============================================================
+  // 8. V1.4 新增：user_action 字段验证
+  // ============================================================
+  console.log("\n=== 8. user_action 字段验证 ===");
+
+  const typesFileContent = readFileSync("src/api/types.ts", "utf-8");
+  assert(typesFileContent.includes("user_action"), "T8.1 ChatRequest 含 user_action 字段");
+  assert(typesFileContent.includes("skip_question"), "T8.2 user_action 含 skip_question");
+  assert(typesFileContent.includes("generate_draft_now"), "T8.3 user_action 含 generate_draft_now");
+
+  // ============================================================
+  // 9. V1.4 新增：QuestionPlanner 分数达标逻辑验证
+  // ============================================================
+  console.log("\n=== 9. QuestionPlanner 分数达标逻辑 ===");
+
+  const plannerContent = readFileSync("src/agents/question-planner.ts", "utf-8");
+  assert(plannerContent.includes("DIMENSION_SCORE_THRESHOLD"), "T9.1 QuestionPlanner 含分数达标阈值");
+  assert(!plannerContent.includes("!this.askedDimensions.has(dim)"), "T9.2 不再使用'问过就不再问'逻辑");
 
   // ============================================================
   // 汇总

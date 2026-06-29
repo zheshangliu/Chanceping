@@ -108,16 +108,16 @@ ChanceScore = FitScore + IntentScore + EvidenceScore + UrgencyScore - EffortCost
 ### 方式一：一键启动（推荐）
 
 ```bash
-git clone https://github.com/user/chanceping.git
-cd chanceping
+git clone https://github.com/zheshangliu/Chanceping.git
+cd Chanceping
 npm run quick-start
 ```
 
 或手动执行：
 
 ```bash
-git clone https://github.com/user/chanceping.git
-cd chanceping
+git clone https://github.com/zheshangliu/Chanceping.git
+cd Chanceping
 npm install
 cp .env.example .env    # Windows: copy .env.example .env
 npm run dev

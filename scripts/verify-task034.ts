@@ -94,8 +94,8 @@ function checkVersionAndScripts(): void {
   const pkgContent = fs.readFileSync(pkgPath, "utf-8");
   const pkg = JSON.parse(pkgContent);
 
-  // F16: package.json version = "1.0.0"
-  assert(pkg.version === "1.0.0", `F16: package.json version = "1.0.0"（当前: ${pkg.version}）`);
+  // F16: package.json version = "1.3.0"
+  assert(pkg.version === "1.3.0", `F16: package.json version = "1.3.0"（当前: ${pkg.version}）`);
 
   // F17: package.json scripts 含 dev + start + quick-start
   assert(

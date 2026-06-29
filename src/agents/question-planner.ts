@@ -51,6 +51,9 @@ const DIMENSION_TO_FIELD: Record<ConfidenceDimensionKey, string> = {
   report_format: "report_format.frequency",
 };
 
+/** 维度分数达标阈值（≥此值才不再追问该维度） */
+const DIMENSION_SCORE_THRESHOLD = 60;
+
 // ============================================================
 // QuestionPlanner 类
 // ============================================================
@@ -68,19 +71,33 @@ export class QuestionPlanner {
    * 选择下一问。
    *
    * 算法：
-   *   1. 过滤掉已问过的维度
+   *   1. 过滤掉"分数已达标"的维度（而非仅"问过"的维度）
    *   2. 计算每个维度的 priority = weight × (1 - score / 100)
    *   3. 选 priority 最高的维度
    *   4. 从 question-bank 中找到该维度对应的问题
-   *   5. 如果所有维度都已问过，返回 null
+   *   5. 如果所有维度都已达标，返回 null
+   *
+   * V1.4 修复：原逻辑"问过就不再问"导致用户回答"都可以"后该维度
+   * 分数仍低但不再追问。现改为"分数达标才不再问"。
    *
    * @param confidence 当前确认度
    * @returns 下一问，或 null（无需继续追问）
    */
   selectNextQuestion(confidence: RequirementConfidence): NextQuestion | null {
-    // 步骤 1：过滤掉已问过的维度
+    // 步骤 1：过滤掉"分数达标"或"所有问题都问过了"的维度（V1.4 修复）
+    const allQuestions = getQuestionsForRadarType(this.radarType);
     const candidates = CONFIDENCE_DIMENSIONS
-      .filter((dim) => !this.askedDimensions.has(dim))
+      .filter((dim) => {
+        const score = confidence[dim].score;
+        // 分数达标 → 不再追问
+        if (score >= DIMENSION_SCORE_THRESHOLD) return false;
+        // 该维度还有未问过的问题 → 继续追问
+        const hasUnasked = allQuestions.some(
+          (q) => !this.askedQuestions.has(q.question) && this.dimensionMatchesQuestion(dim, q),
+        );
+        if (!hasUnasked) return false;
+        return true;
+      })
       .map((dim) => {
         const dimData = confidence[dim];
         const weight = CONFIDENCE_WEIGHTS[dim];
@@ -96,7 +113,6 @@ export class QuestionPlanner {
     const target = candidates[0];
 
     // 步骤 3：从 question-bank 中找到该维度对应的问题
-    const allQuestions = getQuestionsForRadarType(this.radarType);
     const matchingQuestion = allQuestions.find(
       (q) =>
         !this.askedQuestions.has(q.question) &&
@@ -104,9 +120,8 @@ export class QuestionPlanner {
     );
 
     if (!matchingQuestion) {
-      // 如果该维度没有匹配的问题，标记为已问，尝试下一个维度
-      this.askedDimensions.add(target.dimension);
-      return this.selectNextQuestion(confidence);
+      // 理论上不会走到这里（步骤 1 已过滤），但防御性返回 null
+      return null;
     }
 
     // 步骤 4：构建 NextQuestion

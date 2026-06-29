@@ -45,6 +45,22 @@ export function chatRoutes(ctx: AppContext): Hono {
       const fullMessage = uploadedText
         ? `${body.message}\n\n[上传文件内容]\n${uploadedText}`
         : body.message;
+
+      // V1.4 新增：处理 user_action
+      const userAction = body.user_action ?? "answer";
+      if (userAction === "generate_draft_now") {
+        // 用户要求立即生成确认卡（跳过后续追问）
+        const draftTurn = convEntry.manager.getConfirmationCard();
+        if (draftTurn) {
+          return c.json({
+            success: true,
+            data: { ...draftTurn, conversation_id: conversationId, canGenerateDraft: true },
+            error: null,
+            duration_ms: Date.now() - start,
+          } satisfies ApiResponse);
+        }
+      }
+
       const turn = await convEntry.manager.processUserInput(fullMessage);
       return c.json({
         success: true,

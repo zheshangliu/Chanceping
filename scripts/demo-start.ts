@@ -1,12 +1,19 @@
 /**
  * ChancePing Demo Mode 启动脚本
  *
- * 来源：Task 041 第 6 节。
+ * V1.3 五轨道完整版。
  *
  * 一键启动最稳定演示模式：
  *   - DATA_MODE = mock（预设 5 条 AI 赛事机会，无需 API Key）
  *   - LLM_MODE  = mock（固定 Mock 响应，无需 API Key）
  *   - DEMO_MODE = true（UI 显示"Demo 模式"标识，通过 ?demo=true URL 参数触发）
+ *
+ * V1.3 演示能力：
+ *   1. 文件上传（PDF/Word/Excel/图片 → 📎按钮）
+ *   2. 一次一问需求确认（每轮 1 问，6 轮 90% 确认度）
+ *   3. 来源透明（来源徽章 + 证据提取 + S/A/B/C/D 分级）
+ *   4. 报告增强（来源索引第 8.5 章 + D 级排除第 7 章）
+ *   5. 评分统一（90/80/65/50 阈值，全系统一处定义）
  *
  * 演示地址：http://localhost:3000/?demo=true
  * 演示剧本：docs/演示剧本.md

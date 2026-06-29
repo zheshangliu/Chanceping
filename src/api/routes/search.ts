@@ -39,7 +39,7 @@ function createDefaultSpec(): RadarRequirementSpec {
     scoring_rules: {
       backend_score_enabled: true, visible_level_enabled: true,
       weights: { match_score: 30, business_value: 25, timeliness: 20, credibility: 15, actionability: 10, risk_penalty: -20 },
-      visible_level_mapping: { S: "85-100", A: "70-84", B: "55-69", C: "40-54", D: "0-39", hidden: "不展示" },
+      visible_level_mapping: { S: "90-100", A: "80-89", B: "65-79", C: "50-64", D: "0-49", hidden: "不展示" },
       level_definitions: { S: "强烈推荐", A: "高价值", B: "可关注", C: "低优先级", D: "不推荐", hidden: "不展示" },
     },
     report_requirements: {
