@@ -278,7 +278,11 @@ async function main(): Promise<void> {
   checkCss();
   checkJsFunctionality();
   await checkApiIntegration();
-  await checkRegression();
+  if (process.env.SKIP_REGRESSION === "1") {
+    console.log("\n--- 跳过回归测试（SKIP_REGRESSION=1） ---");
+  } else {
+    await checkRegression();
+  }
 
   console.log("");
   console.log("========================================");

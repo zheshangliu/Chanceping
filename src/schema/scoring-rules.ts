@@ -8,11 +8,11 @@
 
 import { t } from "../i18n/locales";
 
-/** 前台可见等级（hidden 表示默认不主动展示） */
-export type VisibleLevel = "S" | "A" | "B" | "C" | "hidden";
+/** 前台可见等级（D 级表示不推荐，hidden 表示默认不主动展示） */
+export type VisibleLevel = "S" | "A" | "B" | "C" | "D" | "hidden";
 
-/** 机会卡片前台展示用的等级（不含 hidden，hidden 不进卡片） */
-export type CardVisibleLevel = "S" | "A" | "B" | "C";
+/** 机会卡片前台展示用的等级（不含 hidden，hidden 不进卡片；V1.3 新增 D 级） */
+export type CardVisibleLevel = "S" | "A" | "B" | "C" | "D";
 
 /** 评分各维度权重 */
 export interface ScoringWeights {
@@ -38,10 +38,10 @@ export interface ScoringRules {
   visible_level_enabled: boolean;
   /** 各维度权重 */
   weights: ScoringWeights;
-  /** 等级与分数区间的映射 */
-  visible_level_mapping: Record<VisibleLevel, string>;
-  /** 等级定义说明 */
-  level_definitions: Record<VisibleLevel, string>;
+  /** 等级与分数区间的映射（V1.3 类型放宽为 Record<string, string>，兼容 D 级新增） */
+  visible_level_mapping: Record<string, string>;
+  /** 等级定义说明（V1.3 类型放宽为 Record<string, string>，兼容 D 级新增） */
+  level_definitions: Record<string, string>;
 }
 
 /** 默认评分权重（取自 03 号文档第 10 节） */
@@ -54,39 +54,41 @@ export const DEFAULT_SCORING_WEIGHTS: ScoringWeights = {
   risk_penalty: -20,
 };
 
-/** 等级与分数区间映射（取自 03 号文档第 10 节） */
-export const VISIBLE_LEVEL_MAPPING: Record<VisibleLevel, string> = {
+/** 等级与分数区间映射（取自 03 号文档第 10 节；V1.3 新增 D 级 "0-49"，hidden 改为 "不展示"） */
+export const VISIBLE_LEVEL_MAPPING: Record<string, string> = {
   S: "90-100",
   A: "80-89",
   B: "65-79",
   C: "50-64",
-  hidden: "<50",
+  D: "0-49",
+  hidden: "不展示",
 };
 
-/** 等级定义说明（取自 03 号文档第 10 节） */
-export const LEVEL_DEFINITIONS: Record<VisibleLevel, string> = {
+/** 等级定义说明（取自 03 号文档第 10 节；V1.3 新增 D 级 "不推荐"） */
+export const LEVEL_DEFINITIONS: Record<string, string> = {
   S: "强烈推荐，优先行动",
   A: "高价值机会，建议认真考虑",
   B: "可关注，适合收藏或观察",
   C: "低优先级，仅供参考",
+  D: "不推荐",
   hidden: "默认不主动展示",
 };
 
 /**
  * 根据后台分数换算前台等级。
- * 规则（取自 03 号文档第 10 节 + Task 001 第 4.6 节）：
+ * 规则（取自 03 号文档第 10 节 + Task 001 第 4.6 节；V1.3：< 50 改为 D 级）：
  *   90–100 → S
  *   80–89  → A
  *   65–79  → B
  *   50–64  → C
- *   < 50   → hidden
+ *   < 50   → D（V1.3 新增，替代原 "hidden"）
  */
 export function scoreToLevel(score: number): VisibleLevel {
   if (score >= 90) return "S";
   if (score >= 80) return "A";
   if (score >= 65) return "B";
   if (score >= 50) return "C";
-  return "hidden";
+  return "D";
 }
 
 /** 生成默认评分规则 */

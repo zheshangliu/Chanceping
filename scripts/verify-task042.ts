@@ -299,7 +299,11 @@ async function main(): Promise<void> {
   checkThreeRadarsScript();
   checkPackageJson();
   await checkApiIntegration();
-  checkRegression();
+  if (process.env.SKIP_REGRESSION === "1") {
+    console.log("\n--- 跳过回归测试（SKIP_REGRESSION=1） ---");
+  } else {
+    checkRegression();
+  }
 
   console.log("");
   console.log("========================================");

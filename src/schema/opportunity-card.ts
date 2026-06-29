@@ -70,6 +70,31 @@ export interface OpportunityCard {
   feedback?: Feedback;
   /** 行动意图（V3.1 新增，Task 039） */
   action_intent?: ActionIntent;
+
+  // ============================================================
+  // V1.3 新增字段（全部 optional，不破坏旧数据）
+  // ============================================================
+
+  /** V1.3 新增：关联雷达 ID（标识这条机会来自哪个雷达） */
+  radarId?: string;
+  /** V1.3 新增：行动决策（attack=立即行动 / hold=观望 / archive=归档） */
+  decision?: "attack" | "hold" | "archive";
+  /** V1.3 新增：来源 ID 列表（关联 SourceCandidate.sourceId） */
+  sourceIds?: string[];
+  /** V1.3 新增：证据 ID 列表（关联 EvidenceItem.evidenceId） */
+  evidenceIds?: string[];
+  /** V1.3 新增：来源可信度等级（SourceConfidenceGrade，如 "A1"/"B2"） */
+  sourceConfidence?: string;
+  /** V1.3 新增：来源验证状态（VerificationStatus） */
+  verificationStatus?: string;
+  /** V1.3 新增：来源徽章列表（前端展示用，如 ["官方", "A1"]） */
+  sourceBadges?: string[];
+  /** V1.3 新增：匹配理由（LLM 生成的"为什么适合你"摘要，≤100 字） */
+  fitReason?: string;
+  /** V1.3 新增：风险摘要（LLM 生成的风险提示，≤100 字） */
+  riskSummary?: string;
+  /** V1.3 新增：推荐行动列表（LLM 生成的具体行动建议） */
+  recommendedActions?: string[];
 }
 
 // ============================================================
