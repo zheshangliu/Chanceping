@@ -37,6 +37,8 @@ export interface StoreEntry {
   updated_at: string;
   /** 去重 key（title + official_source_url 的 hash） */
   dedup_key: string;
+  /** V1.5-03 新增：所属雷达 ID（可选，向后兼容） */
+  radarId?: string;
 }
 
 /** 查询条件 */
@@ -63,6 +65,8 @@ export interface StoreQuery {
   page?: number;
   /** 分页 - 每页数量 */
   page_size?: number;
+  /** V1.5-03 新增：按雷达 ID 筛选 */
+  radarId?: string;
 }
 
 /** 查询结果 */
@@ -87,9 +91,9 @@ export interface StoreStats {
 /** 机会库存储接口（V0.6 本地文件实现，V0.8 Meilisearch 实现） */
 export interface OpportunityStore {
   /** 添加卡片（自动去重） */
-  add(card: OpportunityCard, radar_type: RadarType): StoreEntry;
+  add(card: OpportunityCard, radar_type: RadarType, radarId?: string): StoreEntry;
   /** 批量添加 */
-  addBatch(cards: OpportunityCard[], radar_type: RadarType): StoreEntry[];
+  addBatch(cards: OpportunityCard[], radar_type: RadarType, radarId?: string): StoreEntry[];
   /** 按 dedup_key 获取 */
   get(dedup_key: string): StoreEntry | null;
   /** 查询 */
@@ -256,7 +260,7 @@ export class LocalFileStore implements OpportunityStore {
   }
 
   /** 添加卡片（自动去重） */
-  add(card: OpportunityCard, radar_type: RadarType): StoreEntry {
+  add(card: OpportunityCard, radar_type: RadarType, radarId?: string): StoreEntry {
     const dedupKey = computeDedupKey(card.title, card.official_source_url, card.guid);
     const existing = this.entries.get(dedupKey);
     const now = nowIso();
@@ -268,6 +272,7 @@ export class LocalFileStore implements OpportunityStore {
         ...existing,
         card: { ...card },
         updated_at: now,
+        ...(radarId !== undefined ? { radarId } : {}),
       };
     } else {
       // 不存在：新增条目
@@ -277,6 +282,7 @@ export class LocalFileStore implements OpportunityStore {
         added_at: now,
         updated_at: now,
         dedup_key: dedupKey,
+        ...(radarId !== undefined ? { radarId } : {}),
       };
     }
     this.entries.set(dedupKey, entry);
@@ -288,7 +294,7 @@ export class LocalFileStore implements OpportunityStore {
   }
 
   /** 批量添加 */
-  addBatch(cards: OpportunityCard[], radar_type: RadarType): StoreEntry[] {
+  addBatch(cards: OpportunityCard[], radar_type: RadarType, radarId?: string): StoreEntry[] {
     const results: StoreEntry[] = [];
     for (const card of cards) {
       // 批量添加时暂不自动 flush，最后统一 flush
@@ -301,6 +307,7 @@ export class LocalFileStore implements OpportunityStore {
           ...existing,
           card: { ...card },
           updated_at: now,
+          ...(radarId !== undefined ? { radarId } : {}),
         };
       } else {
         entry = {
@@ -309,6 +316,7 @@ export class LocalFileStore implements OpportunityStore {
           added_at: now,
           updated_at: now,
           dedup_key: dedupKey,
+          ...(radarId !== undefined ? { radarId } : {}),
         };
       }
       this.entries.set(dedupKey, entry);
@@ -349,6 +357,9 @@ export class LocalFileStore implements OpportunityStore {
     }
     if (query.expiring_soon) {
       filtered = filtered.filter((e) => isExpiringSoon(e.card.deadline));
+    }
+    if (query.radarId) {
+      filtered = filtered.filter((e) => e.radarId === query.radarId);
     }
 
     // 2. 排序

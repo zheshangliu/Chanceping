@@ -6,6 +6,10 @@
  * 所有 API 响应统一使用 ApiResponse<T> 格式。
  */
 
+import type { RadarRequirementSpec } from "../schema/radar-requirement-spec";
+import type { ProviderRouting, RadarPrivacy, RadarRun } from "../schema/radar";
+import type { ScoredOpportunity } from "../search/types";
+
 /** 统一响应格式 */
 export interface ApiResponse<T = unknown> {
   /** 是否成功 */
@@ -56,6 +60,8 @@ export interface SearchRequest {
   min_relevance?: number;
   /** 是否抓取正文（默认 true） */
   enable_content_fetch?: boolean;
+  /** V1.5 新增：从 RadarStore 取 spec（优先级高于 spec 字段） */
+  radar_id?: string;
 }
 
 /** Watch Rules 保存请求 */
@@ -104,4 +110,46 @@ export interface OpportunityAddRequest {
 export interface OpportunityUpdateRequest {
   /** 卡片字段更新（部分字段） */
   updates: Record<string, unknown>;
+}
+
+// ============================================================
+// V1.5-03 新增：雷达管理请求/响应类型
+// ============================================================
+
+/** 创建雷达请求 */
+export interface RadarCreateRequest {
+  /** 雷达名称 */
+  name: string;
+  /** 雷达类型 */
+  kind: "ai_competition" | "opc_policy" | "cultural_heritage" | "custom";
+  /** 需求规格（可选） */
+  spec?: RadarRequirementSpec;
+  /** Provider 路由（可选） */
+  providerRouting?: ProviderRouting;
+}
+
+/** 更新雷达请求 */
+export interface RadarUpdateRequest {
+  /** 雷达名称 */
+  name?: string;
+  /** 需求规格 */
+  spec?: RadarRequirementSpec;
+  /** 隐私配置 */
+  privacy?: RadarPrivacy;
+  /** Provider 路由 */
+  providerRouting?: ProviderRouting;
+}
+
+/** 运行雷达请求（可选） */
+export interface RadarRunRequest {
+  /** 覆盖 spec 里的 query */
+  query?: string;
+}
+
+/** 运行雷达结果 */
+export interface RadarRunResult {
+  /** 运行记录 */
+  run: RadarRun;
+  /** 搜索到的机会列表 */
+  opportunities: ScoredOpportunity[];
 }

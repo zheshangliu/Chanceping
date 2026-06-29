@@ -281,7 +281,7 @@ export class MeilisearchStore implements OpportunityStore {
   }
 
   /** 添加卡片（自动去重） */
-  add(card: OpportunityCard, radar_type: RadarType): StoreEntry {
+  add(card: OpportunityCard, radar_type: RadarType, radarId?: string): StoreEntry {
     const dedupKey = computeDedupKey(card.title, card.official_source_url, card.guid);
     const existing = this.entries.get(dedupKey);
     const now = nowIso();
@@ -292,6 +292,7 @@ export class MeilisearchStore implements OpportunityStore {
         ...existing,
         card: { ...card },
         updated_at: now,
+        ...(radarId !== undefined ? { radarId } : {}),
       };
     } else {
       entry = {
@@ -300,6 +301,7 @@ export class MeilisearchStore implements OpportunityStore {
         added_at: now,
         updated_at: now,
         dedup_key: dedupKey,
+        ...(radarId !== undefined ? { radarId } : {}),
       };
     }
     this.entries.set(dedupKey, entry);
@@ -311,7 +313,7 @@ export class MeilisearchStore implements OpportunityStore {
   }
 
   /** 批量添加 */
-  addBatch(cards: OpportunityCard[], radar_type: RadarType): StoreEntry[] {
+  addBatch(cards: OpportunityCard[], radar_type: RadarType, radarId?: string): StoreEntry[] {
     const results: StoreEntry[] = [];
     for (const card of cards) {
       const dedupKey = computeDedupKey(card.title, card.official_source_url, card.guid);
@@ -323,6 +325,7 @@ export class MeilisearchStore implements OpportunityStore {
           ...existing,
           card: { ...card },
           updated_at: now,
+          ...(radarId !== undefined ? { radarId } : {}),
         };
       } else {
         entry = {
@@ -331,6 +334,7 @@ export class MeilisearchStore implements OpportunityStore {
           added_at: now,
           updated_at: now,
           dedup_key: dedupKey,
+          ...(radarId !== undefined ? { radarId } : {}),
         };
       }
       this.entries.set(dedupKey, entry);
@@ -371,6 +375,9 @@ export class MeilisearchStore implements OpportunityStore {
     }
     if (query.expiring_soon) {
       filtered = filtered.filter((e) => isExpiringSoon(e.card.deadline));
+    }
+    if (query.radarId) {
+      filtered = filtered.filter((e) => e.radarId === query.radarId);
     }
 
     // 2. 排序

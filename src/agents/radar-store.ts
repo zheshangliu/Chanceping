@@ -22,6 +22,7 @@ import type {
   RunTriggeredBy,
   ProviderRouting,
   RadarPrivacy,
+  LastRunStatus,
 } from "../schema/radar";
 import {
   createDefaultRadar,
@@ -63,6 +64,14 @@ export interface RadarUpdateInput {
   spec?: RadarRequirementSpec;
   privacy?: RadarPrivacy;
   providerRouting?: ProviderRouting;
+  /** V1.5-03 新增：支持 activate/pause */
+  status?: RadarStatus;
+  /** V1.5-03 新增：支持运行追踪 */
+  currentRunId?: string;
+  /** V1.5-03 新增：上次运行结果 */
+  lastRunStatus?: LastRunStatus;
+  /** V1.5-03 新增：最后运行时间 */
+  lastRunAt?: string;
 }
 
 /** 列表过滤条件 */
@@ -240,6 +249,11 @@ export class JsonRadarStore implements RadarStore {
       ...(patch.spec !== undefined ? { spec: patch.spec } : {}),
       ...(patch.privacy !== undefined ? { privacy: patch.privacy } : {}),
       ...(patch.providerRouting !== undefined ? { providerRouting: patch.providerRouting } : {}),
+      ...(patch.status !== undefined ? { status: patch.status } : {}),
+      // currentRunId 使用 in 检查 key 是否存在，传 undefined 表示显式清空
+      ...("currentRunId" in patch ? { currentRunId: patch.currentRunId } : {}),
+      ...(patch.lastRunStatus !== undefined ? { lastRunStatus: patch.lastRunStatus } : {}),
+      ...(patch.lastRunAt !== undefined ? { lastRunAt: patch.lastRunAt } : {}),
       updatedAt: new Date().toISOString(),
     };
 

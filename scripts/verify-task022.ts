@@ -15,6 +15,8 @@ import { ModelRouter } from "../src/agents/model-router";
 import { LocalFileStore } from "../src/agents/opportunity-store";
 import { StarManager } from "../src/agents/star-manager";
 import { LocalWatchStore } from "../src/watch/watch-store";
+import { JsonRadarStore, JsonRadarRunStore } from "../src/agents/radar-store";
+import { RadarRegistry } from "../src/agents/radar-registry";
 import type { OpportunityCard } from "../src/schema/opportunity-card";
 import type { ApiResponse } from "../src/api/types";
 
@@ -84,6 +86,10 @@ function createTestContext(): AppContext {
   store.load();
   const starManager = new StarManager(store);
   const watchStore = new LocalWatchStore({ file_path: TEST_WATCH_PATH });
+  const radarStore = new JsonRadarStore();
+  const radarRunStore = new JsonRadarRunStore();
+  const radarRegistry = new RadarRegistry(radarStore);
+  radarRegistry.initialize();
 
   return {
     llmAdapter: modelRouter,
@@ -91,6 +97,9 @@ function createTestContext(): AppContext {
     starManager,
     watchStore,
     conversations: new Map(),
+    radarStore,
+    radarRunStore,
+    radarRegistry,
   };
 }
 

@@ -79,7 +79,20 @@ export function searchRoutes(ctx: AppContext): Hono {
       return c.json({ success: false, data: null, error: { code: "BAD_REQUEST", message: "请求体不是合法 JSON" }, duration_ms: Date.now() - start } satisfies ApiResponse, 400);
     }
     try {
-      const spec = (body.spec as RadarRequirementSpec) ?? createDefaultSpec();
+      // V1.5-03 新增：radar_id 优先级 > spec > 默认 spec
+      let spec: RadarRequirementSpec;
+      let radarId: string | undefined;
+      if (body.radar_id) {
+        const radar = ctx.radarRegistry.getRadarById(body.radar_id);
+        if (!radar) {
+          return c.json({ success: false, data: null, error: { code: "RADAR_NOT_FOUND", message: `雷达 ${body.radar_id} 不存在` }, duration_ms: Date.now() - start } satisfies ApiResponse, 404);
+        }
+        spec = radar.spec;
+        radarId = body.radar_id;
+      } else {
+        spec = (body.spec as RadarRequirementSpec) ?? createDefaultSpec();
+      }
+
       const orchestrator = new SearchOrchestrator({
         llmAdapter: ctx.llmAdapter,
         maxResultsPerProvider: body.max_results,
@@ -89,6 +102,15 @@ export function searchRoutes(ctx: AppContext): Hono {
         dataMode: getDataMode(),
       });
       const result = await orchestrator.search(spec, body.query);
+
+      // V1.5-03：如果有 radar_id，给返回结果的 opportunities 附加 radarId
+      if (radarId && result.opportunities) {
+        result.opportunities = result.opportunities.map((opp) => ({
+          ...opp,
+          radarId,
+        }));
+      }
+
       return c.json({ success: true, data: result, error: null, duration_ms: Date.now() - start } satisfies ApiResponse);
     } catch (err) {
       return c.json({ success: false, data: null, error: { code: "SEARCH_ERROR", message: err instanceof Error ? err.message : String(err) }, duration_ms: Date.now() - start } satisfies ApiResponse, 500);
