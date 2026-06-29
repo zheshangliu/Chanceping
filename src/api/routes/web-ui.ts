@@ -95,7 +95,7 @@ export function webUiRoutes(): Hono {
       const content = fs.readFileSync(fullPath);
       c.header("Content-Type", getContentType(fullPath));
       c.header("Cache-Control", "public, max-age=86400");
-      return c.body(content);
+      return c.body(content as unknown as ArrayBuffer);
     };
   }
 
