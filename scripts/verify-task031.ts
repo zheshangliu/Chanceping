@@ -104,6 +104,7 @@ const TEST_REVIEW: ReviewSummary = {
     A: { total: 3, applied: 1, missed: 2, hit_rate: 0.333 },
     B: { total: 3, applied: 1, missed: 1, hit_rate: 0.333 },
     C: { total: 2, applied: 0, missed: 1, hit_rate: 0 },
+    D: { total: 0, applied: 0, missed: 0, hit_rate: 0 },
   },
   by_radar_type: {
     ai_competition: { total: 5, applied: 2, missed: 3, hit_rate: 0.4 },

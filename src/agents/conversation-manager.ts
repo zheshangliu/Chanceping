@@ -38,6 +38,13 @@ import {
 } from "./confidence-engine";
 import { getQuestionsForRadarType } from "../prompts/question-bank";
 import { getNextStatus } from "../schema/conversation-state-machine";
+// V1.3 新增：一次一问 + 长文本整理 + 确认卡生成
+import { QuestionPlanner } from "./question-planner";
+import { normalizeUserInput, type NormalizedUserInput } from "./normalize-user-input";
+import { generateConfirmationCard } from "./requirement-card-generator";
+import { REQUIREMENT_CONFIRMATION_SYSTEM_PROMPT_V2 } from "../prompts/requirement-confirmation-system-prompt-v2";
+import type { NextQuestion, QuestionMode } from "../schema/next-question";
+import type { RequirementConfirmationCard } from "../schema/requirement-confirmation-card";
 
 // ============================================================
 // 辅助函数
@@ -256,17 +263,30 @@ function buildAiResponseText(turn: TurnOutput): string {
 export class ConversationManager {
   private state: ConversationState;
   private llmAdapter: LLMAdapter;
+  private questionPlanner: QuestionPlanner;  // V1.3 新增
+  private useV2Prompt: boolean;               // V1.3 新增
+  private confirmationCard: RequirementConfirmationCard | null = null;  // V1.3 新增
 
   constructor(
     llmAdapter: LLMAdapter,
     radarType: RadarType,
     conversationId?: string,
+    useV2Prompt: boolean = false,  // V1.3 新增，默认 false 保持兼容
   ) {
     this.llmAdapter = llmAdapter;
+    this.questionPlanner = new QuestionPlanner(radarType);
+    this.useV2Prompt = useV2Prompt;
     this.state = createInitialConversationState(
       conversationId ?? generateConversationId(),
       radarType,
     );
+    // 如果使用 V2 模式，替换 system prompt
+    if (useV2Prompt) {
+      this.state.message_history[0] = {
+        role: "system",
+        content: REQUIREMENT_CONFIRMATION_SYSTEM_PROMPT_V2,
+      };
+    }
   }
 
   /** 初始化对话（system prompt 已在构造时通过 createInitialConversationState 注入） */
@@ -331,21 +351,61 @@ export class ConversationManager {
     const branch = getConfidenceBranch(newConfidence.total);
     this.state.branch = branch;
 
-    // 步骤 7：选择追问问题（仅当需要继续追问时）
+    // 步骤 7：选择下一问（一次一问模式）
     let questions: QuestionToConfirm[] = [];
-    if (branch === "needs_more_info" || branch === "continue_confirming") {
-      const allQuestions = getQuestionsForRadarType(this.state.radar_type);
-      // 过滤掉已问过的问题
-      const unasked = allQuestions.filter(
-        (q) => !this.state.asked_questions.includes(q.question),
-      );
-      // 按 priority 排序（high > medium > low）
-      unasked.sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
-      // 取前 5 个
-      questions = unasked.slice(0, 5);
-      // 把追问问题加入 asked_questions
-      for (const q of questions) {
-        this.state.asked_questions.push(q.question);
+    let nextQuestion: NextQuestion | null = null;
+    let canGenerateDraft = false;
+    let maxTurnsReached = false;
+    const questionMode: QuestionMode = this.useV2Prompt ? "single" : "multi";
+
+    // V1.3 长文本整理
+    const normalized: NormalizedUserInput = normalizeUserInput(userInput);
+
+    if (this.useV2Prompt) {
+      // 一次一问模式
+      const draftDecision = this.questionPlanner.shouldGenerateDraft(newConfidence, this.state.turn_count + 1);
+      canGenerateDraft = draftDecision.should;
+
+      if (draftDecision.should) {
+        // 生成确认卡
+        this.confirmationCard = generateConfirmationCard(
+          this.state.conversation_id,
+          newConfidence,
+          this.state.extracted_info,
+          this.state.turn_count + 1,
+        );
+      } else if (this.state.turn_count + 1 >= this.questionPlanner.getMaxTurns()) {
+        maxTurnsReached = true;
+      } else {
+        // 选择下一问
+        nextQuestion = this.questionPlanner.selectNextQuestion(newConfidence);
+        if (nextQuestion) {
+          // 同时填充 questions 数组（兼容旧前端）
+          questions = [{
+            question: nextQuestion.question,
+            why_it_matters: nextQuestion.whyItMatters,
+            related_field: nextQuestion.relatedField,
+            priority: "high",
+          }];
+          this.state.asked_questions.push(nextQuestion.question);
+        }
+      }
+    } else {
+      // 旧模式：一次多问（fallback）
+      if (branch === "needs_more_info" || branch === "continue_confirming") {
+        const allQuestions = getQuestionsForRadarType(this.state.radar_type);
+        // 过滤掉已问过的问题
+        const unasked = allQuestions.filter(
+          (q) => !this.state.asked_questions.includes(q.question),
+        );
+        // 按 priority 排序（high > medium > low）
+        unasked.sort((a, b) => PRIORITY_ORDER[a.priority] - PRIORITY_ORDER[b.priority]);
+        // 取前 5 个
+        questions = unasked.slice(0, 5);
+        // 把追问问题加入 asked_questions
+        for (const q of questions) {
+          this.state.asked_questions.push(q.question);
+        }
       }
     }
 
@@ -360,8 +420,12 @@ export class ConversationManager {
 
     // 步骤 10：构建 TurnOutput
     const summary = parsed.summary ?? `已收到您的输入："${userInput}"。`;
+    // V1.3：如果长文本整理生效，把整理后的文本附加到 summary
+    const finalSummary = normalized.wasNormalized
+      ? `${summary}（已整理：${normalized.normalizedText}）`
+      : summary;
     const turnOutput: TurnOutput = {
-      summary,
+      summary: finalSummary,
       confirmed_items: buildConfirmedItems(this.state.extracted_info),
       uncertain_items: buildUncertainItems(this.state.extracted_info),
       questions,
@@ -369,6 +433,11 @@ export class ConversationManager {
       confidence_delta,
       current_status_text,
       status: this.state.current_status,
+      // V1.3 新增字段
+      nextQuestion,
+      canGenerateDraft,
+      maxTurnsReached,
+      questionMode,
     };
 
     // 步骤 11：将 AI 回复加入 message_history
@@ -479,6 +548,26 @@ export class ConversationManager {
       confidence_delta: null,
       current_status_text: getStatusText(this.state.branch),
       status: this.state.current_status,
+      // V1.3 新增字段（无操作时不携带一次一问数据）
+      nextQuestion: null,
+      canGenerateDraft: this.confirmationCard !== null,
+      maxTurnsReached: false,
+      questionMode: this.useV2Prompt ? "single" : "multi",
     };
+  }
+
+  /** V1.3 新增：获取确认卡（如果已生成） */
+  getConfirmationCard(): RequirementConfirmationCard | null {
+    return this.confirmationCard;
+  }
+
+  /** V1.3 新增：是否使用 V2 一次一问模式 */
+  isV2Mode(): boolean {
+    return this.useV2Prompt;
+  }
+
+  /** V1.3 新增：获取 QuestionPlanner 实例（供单元测试使用） */
+  getQuestionPlanner(): QuestionPlanner {
+    return this.questionPlanner;
   }
 }

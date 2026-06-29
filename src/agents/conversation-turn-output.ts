@@ -8,6 +8,7 @@
 
 import type { RequirementConfidence } from "../schema/requirement-confidence";
 import type { ConfirmationStatus, QuestionToConfirm } from "../schema/radar-requirement-spec";
+import type { NextQuestion, QuestionMode } from "../schema/next-question";
 
 /** 已确认信息项 */
 export interface ConfirmedItem {
@@ -50,4 +51,17 @@ export interface TurnOutput {
   current_status_text: string;
   /** 当前确认状态 */
   status: ConfirmationStatus;
+
+  // ============================================================
+  // V1.3 新增字段（一次一问模式，全部 optional）
+  // ============================================================
+
+  /** V1.3 新增：下一问（一次一问模式下，每轮 ≤1 个问题） */
+  nextQuestion?: NextQuestion | null;
+  /** V1.3 新增：是否可以生成草案（确认卡） */
+  canGenerateDraft?: boolean;
+  /** V1.3 新增：是否已达最大轮次（6 轮） */
+  maxTurnsReached?: boolean;
+  /** V1.3 新增：问题模式（single=一次一问 / multi=一次多问旧模式） */
+  questionMode?: QuestionMode;
 }

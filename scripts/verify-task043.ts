@@ -216,7 +216,10 @@ async function checkApiIntegration(): Promise<void> {
     });
     check("T21.1 AI 搜索结果为 AI 赛事类", aiHasCompetition, `titles=${aiTitles.slice(0, 120)}`);
   } finally {
-    server.close();
+    // 等待 server 完全关闭，避免 libuv async handle 崩溃
+    await new Promise<void>((resolve) => {
+      server.close(() => resolve());
+    });
   }
 }
 
@@ -295,14 +298,15 @@ async function main(): Promise<void> {
 
   if (failed > 0) {
     console.log("\n❌ 存在失败项，请修复后重试");
-    process.exit(1);
+    process.exitCode = 1;
   } else {
     console.log("\n✓ 全部通过");
-    process.exit(0);
+    process.exitCode = 0;
   }
+  // 不调用 process.exit()，让事件循环自然退出，避免 libuv async handle 崩溃
 }
 
 main().catch((err) => {
   console.error("执行失败：", err);
-  process.exit(1);
+  process.exitCode = 1;
 });

@@ -143,8 +143,78 @@
       const summary = data.summary || "(无摘要)";
       bubble.innerHTML = `<div class="message-summary">${escapeHtml(summary)}</div>`;
 
-      // 追问问题
-      if (Array.isArray(data.questions) && data.questions.length > 0) {
+      // V1.3 一次一问渲染（优先于 questions 数组）
+      if (data.nextQuestion) {
+        const nq = data.nextQuestion;
+        const qCard = document.createElement("div");
+        qCard.className = "next-question-card";
+
+        // 问题文本
+        const qText = document.createElement("div");
+        qText.className = "next-question-text";
+        qText.textContent = nq.question;
+        qCard.appendChild(qText);
+
+        // 为什么问这个问题
+        if (nq.whyItMatters) {
+          const why = document.createElement("div");
+          why.className = "next-question-why";
+          why.textContent = nq.whyItMatters;
+          qCard.appendChild(why);
+        }
+
+        // 题型适配
+        if (nq.questionType === "yes_no" && nq.options) {
+          const btnRow = document.createElement("div");
+          btnRow.className = "next-question-options";
+          nq.options.forEach((opt) => {
+            const btn = document.createElement("button");
+            btn.className = "option-btn";
+            btn.textContent = opt;
+            btn.addEventListener("click", () => {
+              const input = getInputEl();
+              if (input) { input.value = opt; input.focus(); }
+            });
+            btnRow.appendChild(btn);
+          });
+          qCard.appendChild(btnRow);
+        } else if (nq.questionType === "single_choice" && nq.options) {
+          const optList = document.createElement("div");
+          optList.className = "next-question-options";
+          nq.options.forEach((opt) => {
+            const btn = document.createElement("button");
+            btn.className = "option-btn";
+            btn.textContent = opt;
+            btn.addEventListener("click", () => {
+              const input = getInputEl();
+              if (input) { input.value = opt; input.focus(); }
+            });
+            optList.appendChild(btn);
+          });
+          qCard.appendChild(optList);
+        } else {
+          // open_text / multi_choice：点击填入输入框
+          const fillBtn = document.createElement("button");
+          fillBtn.className = "option-btn fill-input";
+          fillBtn.textContent = "点击回答";
+          fillBtn.addEventListener("click", () => {
+            const input = getInputEl();
+            if (input) { input.value = ""; input.focus(); }
+          });
+          qCard.appendChild(fillBtn);
+        }
+
+        // V1.3 新增：预估确认度提升
+        if (nq.estimatedConfidenceGain && nq.estimatedConfidenceGain > 0) {
+          const gain = document.createElement("div");
+          gain.className = "next-question-gain";
+          gain.textContent = `预估确认度提升 +${nq.estimatedConfidenceGain}`;
+          qCard.appendChild(gain);
+        }
+
+        bubble.appendChild(qCard);
+      } else if (Array.isArray(data.questions) && data.questions.length > 0) {
+        // 旧模式：questions 数组（fallback）
         const qList = document.createElement("div");
         qList.className = "message-questions";
         data.questions.forEach((q) => {
@@ -169,6 +239,14 @@
         status.className = "message-status";
         status.textContent = `状态：${data.current_status_text}`;
         bubble.appendChild(status);
+      }
+
+      // V1.3 新增：问题模式标识
+      if (data.questionMode) {
+        const modeBadge = document.createElement("div");
+        modeBadge.className = "mode-badge " + data.questionMode;
+        modeBadge.textContent = data.questionMode === "single" ? "一次一问" : "多问模式";
+        bubble.appendChild(modeBadge);
       }
     } else if (role === "user") {
       bubble.textContent = content;
@@ -278,6 +356,20 @@
       } else {
         searchBtn.disabled = true;
         searchBtn.classList.remove("enabled");
+      }
+    }
+
+    // V1.3 新增：低置信度提示
+    if (data.maxTurnsReached && !data.canGenerateDraft) {
+      showToast("已达最大轮次，信息仍不足。建议补充更多细节后重试。", "warning");
+    }
+
+    // V1.3 新增：确认卡可生成提示
+    if (data.canGenerateDraft) {
+      const cardBtn = document.getElementById("generate-card-btn");
+      if (cardBtn) {
+        cardBtn.disabled = false;
+        cardBtn.classList.add("enabled");
       }
     }
   }

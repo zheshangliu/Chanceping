@@ -129,13 +129,14 @@ const EXPIRING_SOON_DAYS = 7;
 /** 默认分页大小 */
 const DEFAULT_PAGE_SIZE = 20;
 
-/** 可见等级优先级映射（数字越小优先级越高，S > A > B > C） */
+/** 可见等级优先级映射（数字越小优先级越高，S > A > B > C > D） */
 const VISIBLE_LEVEL_PRIORITY: Record<CardVisibleLevel | "hidden", number> = {
   S: 0,
   A: 1,
   B: 2,
   C: 3,
-  hidden: 4,
+  D: 4,
+  hidden: 5,
 };
 
 /** 雷达类型列表（用于 stats 初始化） */
@@ -152,7 +153,7 @@ const CARD_STATUSES: OpportunityCardStatus[] = [
 ];
 
 /** 可见等级列表（用于 stats 初始化，含 hidden） */
-const VISIBLE_LEVELS: Array<CardVisibleLevel | "hidden"> = ["S", "A", "B", "C", "hidden"];
+const VISIBLE_LEVELS: Array<CardVisibleLevel | "hidden"> = ["S", "A", "B", "C", "D", "hidden"];
 
 // ============================================================
 // 辅助函数

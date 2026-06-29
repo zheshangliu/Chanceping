@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { AppContext } from "../context";
 import type { ApiResponse, ChatRequest } from "../types";
 import { ConversationManager } from "../../agents/conversation-manager";
+import type { TurnOutput } from "../../agents/conversation-turn-output";
 
 export function chatRoutes(ctx: AppContext): Hono {
   const app = new Hono();
@@ -34,7 +35,8 @@ export function chatRoutes(ctx: AppContext): Hono {
         conversationId = body.conversation_id!;
       } else {
         conversationId = body.conversation_id ?? `conv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-        const manager = new ConversationManager(ctx.llmAdapter, radarType, conversationId);
+        // V1.3：默认启用 V2 一次一问模式
+        const manager = new ConversationManager(ctx.llmAdapter, radarType, conversationId, true);
         convEntry = { manager, radar_type: radarType };
         ctx.conversations.set(conversationId, convEntry);
       }
@@ -89,6 +91,72 @@ export function chatRoutes(ctx: AppContext): Hono {
     return c.json({
       success: true, data: { conversation_id: id, deleted: true },
       error: null, duration_ms: Date.now() - start,
+    } satisfies ApiResponse);
+  });
+
+  // ============================================================
+  // V1.3 新增端点
+  // ============================================================
+
+  // POST /:id/confirmation-card - 生成需求确认卡
+  app.post("/:id/confirmation-card", (c) => {
+    const start = Date.now();
+    const id = c.req.param("id");
+    const entry = ctx.conversations.get(id);
+    if (!entry) {
+      return c.json({
+        success: false, data: null,
+        error: { code: "NOT_FOUND", message: `会话 ${id} 不存在` },
+        duration_ms: Date.now() - start,
+      } satisfies ApiResponse, 404);
+    }
+    const manager = entry.manager;
+    const card = manager.getConfirmationCard();
+    if (!card) {
+      return c.json({
+        success: false, data: null,
+        error: { code: "CARD_NOT_READY", message: "确认卡尚未生成，请继续对话" },
+        duration_ms: Date.now() - start,
+      } satisfies ApiResponse, 400);
+    }
+    return c.json({
+      success: true, data: card, error: null,
+      duration_ms: Date.now() - start,
+    } satisfies ApiResponse);
+  });
+
+  // POST /:id/confirm - 确认或拒绝需求确认卡
+  app.post("/:id/confirm", async (c) => {
+    const start = Date.now();
+    const id = c.req.param("id");
+    const entry = ctx.conversations.get(id);
+    if (!entry) {
+      return c.json({
+        success: false, data: null,
+        error: { code: "NOT_FOUND", message: `会话 ${id} 不存在` },
+        duration_ms: Date.now() - start,
+      } satisfies ApiResponse, 404);
+    }
+    let body: { action: "confirm" | "reject" };
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({
+        success: false, data: null,
+        error: { code: "BAD_REQUEST", message: "请求体不是合法 JSON" },
+        duration_ms: Date.now() - start,
+      } satisfies ApiResponse, 400);
+    }
+    const manager = entry.manager;
+    let turn: TurnOutput;
+    if (body.action === "confirm") {
+      turn = manager.userConfirm();
+    } else {
+      turn = manager.userRequestRevision();
+    }
+    return c.json({
+      success: true, data: { ...turn, conversation_id: id }, error: null,
+      duration_ms: Date.now() - start,
     } satisfies ApiResponse);
   });
 
