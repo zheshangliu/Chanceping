@@ -22,6 +22,9 @@
   // ============================================================
 
   let currentResults = []; // 当前搜索结果（ScoredOpportunity[]）
+  let currentSourceCandidates = []; // V1.3 新增：来源候选列表
+  let currentEvidenceItems = []; // V1.3 新增：证据项列表
+  let currentOpportunityCards = []; // V1.3 新增：机会卡片列表
   let currentRadarType = "ai_competition"; // 当前雷达类型
   let starredKeys = new Set(); // 已 Star 的 dedup_key
   let cardKeyMap = new Map(); // guid/url → dedup_key（已入库的映射）
@@ -130,6 +133,10 @@
       const json = await res.json();
       if (json.success) {
         currentResults = json.data.opportunities || [];
+        // V1.3 新增：来源数据
+        currentSourceCandidates = json.data.sourceCandidates || [];
+        currentEvidenceItems = json.data.evidenceItems || [];
+        currentOpportunityCards = json.data.opportunityCards || [];
         renderResults(currentResults);
       } else {
         showSearchError(json.error?.message || "搜索失败");
@@ -218,7 +225,9 @@
 
     resultsEl.innerHTML = "";
     visible.forEach((opp) => {
-      const cardEl = renderCard(opp);
+      // V1.3 新增：查找原始索引以匹配 opportunityCards 数据
+      const originalIndex = opportunities.indexOf(opp);
+      const cardEl = renderCard(opp, originalIndex);
       resultsEl.appendChild(cardEl);
     });
   }
@@ -227,7 +236,7 @@
   // 渲染单张卡片
   // ============================================================
 
-  function renderCard(opp) {
+  function renderCard(opp, index) {
     const card = document.createElement("div");
     card.className = "opp-card";
     card.dataset.level = opp.visible_level || "C";
@@ -242,6 +251,15 @@
     const score = opp.chance_score || {};
     const totalScore = score.total ?? opp.backend_score ?? 0;
 
+    // V1.3 新增：来源徽章（优先使用 opportunityCards 数据）
+    const cardData = currentOpportunityCards[index] || {};
+    const sourceBadges = cardData.sourceBadges || [];
+    const decision = cardData.decision || "";
+    const badgesHtml = sourceBadges.length > 0
+      ? sourceBadges.map((b) => `<span class="source-badge">${escapeHtml(b)}</span>`).join("")
+      : "";
+    const decisionHtml = decision ? `<span class="decision-badge decision-${decision}">${decision === "attack" ? "立即行动" : decision === "hold" ? "观望" : "归档"}</span>` : "";
+
     card.innerHTML = `
       <div class="card-header">
         <span class="level-badge level-${level.toLowerCase()}">${level}</span>
@@ -252,6 +270,8 @@
       <div class="card-meta">
         <span class="card-radar-tag radar-${radarTagClass(currentRadarType)}">${radarLabel(currentRadarType)}</span>
         <span class="card-source">${escapeHtml(source)}</span>
+        ${badgesHtml ? `<span class="source-badges">${badgesHtml}</span>` : ""}
+        ${decisionHtml}
       </div>
       ${reason ? `<div class="card-reason">💡 ${escapeHtml(reason)}</div>` : ""}
       <div class="card-total-score">ChanceScore: ${totalScore}分</div>
@@ -268,7 +288,7 @@
         }).join("")}
       </div>
       <div class="card-detail" style="display:none;">
-        ${renderCardDetail(opp)}
+        ${renderCardDetail(opp, index)}
       </div>
     `;
 
@@ -278,10 +298,30 @@
     return card;
   }
 
-  function renderCardDetail(opp) {
+  function renderCardDetail(opp, index) {
     const url = opp.search_result?.url || "";
     const cleaned = opp.cleaned_content || {};
     const mainText = cleaned.main_text || "";
+
+    // V1.3 新增：来源列表（从 currentSourceCandidates 中查找匹配的来源）
+    const oppUrl = opp.search_result?.url || "";
+    const sources = currentSourceCandidates.filter((s) => s.url === oppUrl);
+    const sourcesHtml = sources.length > 0
+      ? sources.map((s) => `
+        <div class="detail-source">
+          <span class="source-type-badge source-${escapeAttr(s.sourceType || "unknown")}">${escapeHtml(s.mediaName || s.sourceType || "未知")}</span>
+          <span class="source-grade">${escapeHtml(s.confidenceGrade || "")}</span>
+          <a href="${escapeAttr(s.url)}" target="_blank" rel="noopener">查看来源</a>
+        </div>
+      `).join("")
+      : '<div class="detail-source-placeholder">暂无来源信息</div>';
+
+    // V1.3 新增：推荐行动（从 opportunityCards 中获取）
+    const cardData = currentOpportunityCards[index] || {};
+    const recommendedActions = cardData.recommendedActions || [];
+    const actionsHtml = recommendedActions.length > 0
+      ? recommendedActions.map((a) => `<li>${escapeHtml(a)}</li>`).join("")
+      : "";
 
     return `
       <div class="detail-row"><span>官方链接</span><a href="${escapeAttr(url)}" target="_blank" rel="noopener">查看</a></div>
@@ -290,6 +330,11 @@
       <div class="detail-row"><span>地区</span>${escapeHtml(extractRegion(mainText) || "未知")}</div>
       <div class="detail-row"><span>奖励</span>${escapeHtml(extractReward(mainText) || "未知")}</div>
       <div class="detail-row"><span>适合对象</span>${escapeHtml(extractEligibility(mainText) || "未知")}</div>
+      <div class="detail-sources">
+        <h5>来源信息</h5>
+        ${sourcesHtml}
+      </div>
+      ${actionsHtml ? `<div class="detail-actions"><h5>推荐行动</h5><ul>${actionsHtml}</ul></div>` : ""}
       <div class="feedback-section">
         <h5>反馈评价</h5>
         <div class="feedback-buttons">

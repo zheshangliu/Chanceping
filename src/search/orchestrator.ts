@@ -23,12 +23,18 @@ import type { ScoredOpportunity, SearchResult, CleanedContent } from "./types";
 import type { RadarRequirementSpec } from "../schema/radar-requirement-spec";
 import type { LLMAdapter } from "../agents/llm-adapter";
 import type { DataMode } from "../demo/data-mode";
+import type { SourceCandidate } from "../schema/source-candidate";
+import type { EvidenceItem } from "../schema/evidence-item";
+import type { OpportunityCard } from "../schema/opportunity-card";
 import { providerRegistry } from "./provider-registry";
 import { ruleFilter } from "./rule-filter";
 import { aiFilter, type AIFilterItem } from "./ai-filter";
 import { scoreOpportunities } from "./opportunity-scorer";
 import { deduplicateByUrL } from "./radar-router";
 import { loadDemoSearchResults } from "../demo";
+import { classifySources } from "./source-classifier";
+import { extractEvidenceBatch } from "./evidence-extractor";
+import { mapToCard } from "./opportunity-card-mapper";
 
 /** 搜索编排器配置 */
 export interface SearchOrchestratorConfig {
@@ -68,6 +74,15 @@ export interface SearchOrchestratorResult {
   errors: string[];
   /** 总耗时（毫秒） */
   duration_ms: number;
+  // ============================================================
+  // V1.3 新增字段（来源透明，全部 optional）
+  // ============================================================
+  /** V1.3 新增：来源候选列表（每个搜索结果对应的来源分类） */
+  sourceCandidates?: SourceCandidate[];
+  /** V1.3 新增：证据项列表（从清洗内容中提取的字段级证据） */
+  evidenceItems?: EvidenceItem[];
+  /** V1.3 新增：机会卡片列表（映射后的 OpportunityCard，含 S 级硬规则） */
+  opportunityCards?: OpportunityCard[];
 }
 
 /** 默认每个 provider 最大结果数 */
@@ -307,6 +322,36 @@ export class SearchOrchestrator {
       errors.push(`机会评分失败: ${errMsg}`);
     }
 
+    // 步骤 6：V1.3 来源透明（来源分类 + 证据提取 + 卡片映射）
+    let sourceCandidates: SourceCandidate[] | undefined;
+    let evidenceItems: EvidenceItem[] | undefined;
+    let opportunityCards: OpportunityCard[] | undefined;
+
+    try {
+      // 6.1 来源分类
+      const scoredResults = opportunities.map((o) => o.search_result);
+      sourceCandidates = classifySources(scoredResults);
+
+      // 6.2 证据提取
+      const cleanedContents = opportunities.map((o) => o.cleaned_content);
+      const sourceIds = sourceCandidates.map((s) => s.sourceId);
+      evidenceItems = extractEvidenceBatch(cleanedContents, sourceIds);
+
+      // 6.3 卡片映射（含 S 级硬规则）
+      opportunityCards = opportunities.map((opp) => {
+        // 为每个机会找到对应的来源和证据
+        const oppUrl = opp.search_result.url;
+        const oppSources = sourceCandidates!.filter((s) => s.url === oppUrl);
+        const oppSourceIds = oppSources.map((s) => s.sourceId);
+        const oppEvidence = evidenceItems!.filter((e) => oppSourceIds.includes(e.sourceId));
+        const radarId = radarType;
+        return mapToCard(opp, oppSources, oppEvidence, radarId);
+      });
+    } catch (err) {
+      const errMsg = err instanceof Error ? err.message : String(err);
+      errors.push(`来源透明处理失败: ${errMsg}`);
+    }
+
     return {
       total_raw: rawResults.length,
       total_rule_passed: ruleResult.passed.length,
@@ -315,6 +360,10 @@ export class SearchOrchestrator {
       opportunities,
       errors,
       duration_ms: Date.now() - startTime,
+      // V1.3 新增字段
+      sourceCandidates,
+      evidenceItems,
+      opportunityCards,
     };
   }
 }
