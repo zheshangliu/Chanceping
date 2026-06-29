@@ -32,7 +32,17 @@
       { "title": "2026 全国大学生 AI 挑战杯", "relevant": true, "reason": "AI 赛事，奖金 5 万，但限在校大学生" },
       { "title": "AI 开源社区黑客松", "relevant": true, "reason": "AI 赛事，线上，门槛低" },
       { "title": "企业 AI 应用创新赛", "relevant": false, "reason": "面向企业团队，个人不适合" },
-      { "title": "AI 技术沙龙（滚动开放）", "relevant": false, "reason": "非比赛性质，无奖金" }
+      { "title": "AI 技术沙龙（滚动开放）", "relevant": false, "reason": "非比赛性质，无奖金" },
+      { "title": "2026 年高新技术企业认定申报", "relevant": true, "reason": "政策补贴，税收减免 + 30 万，符合企业需求" },
+      { "title": "专精特新中小企业培育政策", "relevant": true, "reason": "政策奖励 50 万，滚动申报，符合中小企业" },
+      { "title": "科技型中小企业评价入库", "relevant": true, "reason": "政策优惠，研发费用加计扣除，符合科技企业" },
+      { "title": "数字化转型试点项目申报", "relevant": false, "reason": "要求转型投入 500 万以上，门槛较高" },
+      { "title": "2024 年商务领域旧政策补贴（已过期）", "relevant": false, "reason": "已过期，不可申报" },
+      { "title": "国家级非遗代表性传承人申报", "relevant": true, "reason": "非遗传承补助，符合文创传承需求" },
+      { "title": "文创产业发展专项资金申报", "relevant": true, "reason": "文创资金 200 万，符合文创企业需求" },
+      { "title": "传统工艺振兴计划项目", "relevant": true, "reason": "传统工艺资助 10-50 万，符合工艺企业" },
+      { "title": "非遗工坊建设资助", "relevant": false, "reason": "资助金额较低 5 万，且需工坊场地" },
+      { "title": "2024 年文创设计大赛（已截止）", "relevant": false, "reason": "已截止，不可报名" }
     ]
   }
 }

@@ -31,7 +31,7 @@ export interface DemoOpportunity {
   source_provider: string;
   page_content: string;
   deadline: string;
-  deadline_status: "confirmed" | "rolling" | "unknown";
+  deadline_status: "confirmed" | "rolling" | "unknown" | "expired";
   deadline_source_url: string;
   reward: string;
   organizer: string;
@@ -108,9 +108,32 @@ export interface MockLlmResponses {
 const DEMO_DIR = path.resolve(__dirname);
 
 /**
+ * Task 042: Mock 数据文件按雷达类型分发映射。
+ * 新增 opc_policy / cultural_heritage 的 Mock 数据文件。
+ */
+const MOCK_FILE_MAP: Record<string, string> = {
+  ai_competition: "ai-events.mock.json",
+  opc_policy: "opc-events.mock.json",
+  cultural_heritage: "cultural-events.mock.json",
+};
+
+/**
+ * Task 042: Recorded 数据文件按雷达类型分发映射。
+ * 注意：OPC/文创的 recorded 数据 V1.2 可选录制，未录制时回退到 AI 赛事 recorded。
+ */
+const RECORDED_FILE_MAP: Record<string, string> = {
+  ai_competition: "ai-events.recorded.json",
+  // OPC/文创暂用 AI 赛事 recorded 数据兜底（V1.2 可选录制独立 recorded 数据）
+  opc_policy: "ai-events.recorded.json",
+  cultural_heritage: "ai-events.recorded.json",
+};
+
+/**
  * 加载 Demo 数据文件（Mock 或 Recorded）。
  *
- * @param radarType 雷达类型（目前仅支持 "ai_competition"）
+ * Task 042 修复：按 radarType 分发文件，不再硬编码 ai-events.mock.json。
+ *
+ * @param radarType 雷达类型（ai_competition / opc_policy / cultural_heritage）
  * @param mode 数据模式（"mock" 或 "recorded"）
  * @returns Demo 数据文件
  */
@@ -118,11 +141,12 @@ export function loadDemoData(
   radarType: string = "ai_competition",
   mode: DataMode = "mock",
 ): DemoDataFile {
+  const key = radarType ?? "ai_competition";
   let filename: string;
   if (mode === "recorded") {
-    filename = "ai-events.recorded.json";
+    filename = RECORDED_FILE_MAP[key] ?? RECORDED_FILE_MAP.ai_competition;
   } else {
-    filename = "ai-events.mock.json";
+    filename = MOCK_FILE_MAP[key] ?? MOCK_FILE_MAP.ai_competition;
   }
 
   const fullPath = path.join(DEMO_DIR, filename);

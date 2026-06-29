@@ -30,6 +30,8 @@
     "demo": "tsx scripts/demo-start.ts",
     "verify:e2e-web-demo": "tsx scripts/verify-e2e-web-demo.ts",
     "verify:task041": "tsx scripts/verify-task041.ts",
+    "verify:task042": "tsx scripts/verify-task042.ts",
+    "verify:e2e-three-radars": "tsx scripts/verify-e2e-three-radars.ts",
     "precheck": "tsx scripts/precheck.ts"
   },
   "dependencies": {

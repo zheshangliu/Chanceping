@@ -1,0 +1,76 @@
+{
+  "radar_type": "opc_policy",
+  "mode": "mock",
+  "opportunities": [
+    {
+      "title": "2026 年高新技术企业认定申报",
+      "url": "https://gov.example.com/high-tech-enterprise-2026",
+      "snippet": "税收减免 + 30 万补贴，截止 2026-09-30，面向全国科技型企业，科技部主办",
+      "source_provider": "bocha",
+      "page_content": "2026 年高新技术企业认定申报由科技部主办，面向全国科技型企业。认定为高新技术企业后可享受企业所得税减免（从 25% 降至 15%），并获得地方补贴 30 万元。申报截止 2026-09-30。申报条件：企业近三年研发费用占销售收入比例不低于 5%，拥有自主知识产权 1 项以上。申报入口：https://gov.example.com/apply",
+      "deadline": "2026-09-30",
+      "deadline_status": "confirmed",
+      "deadline_source_url": "https://gov.example.com/high-tech-enterprise-2026",
+      "reward": "税收减免 + 30 万补贴",
+      "organizer": "科技部",
+      "eligibility": "全国科技型企业",
+      "expected_level": "S"
+    },
+    {
+      "title": "专精特新中小企业培育政策",
+      "url": "https://gov.example.com/specialized-new-2026",
+      "snippet": "50 万奖励，滚动申报，面向专精特新中小企业，工信部主办",
+      "source_provider": "google_cse",
+      "page_content": "专精特新中小企业培育政策由工信部主办，面向全国专精特新中小企业。入选企业可获得 50 万元一次性奖励，并享受融资对接、人才培训等培育服务。申报方式：滚动申报，无固定截止日期。申报条件：企业主营业务收入 1000 万元以上，主导产品在国内细分市场占有率前列。申报入口：https://gov.example.com/apply",
+      "deadline": "",
+      "deadline_status": "rolling",
+      "deadline_source_url": "https://gov.example.com/specialized-new-2026",
+      "reward": "50 万奖励",
+      "organizer": "工信部",
+      "eligibility": "专精特新中小企业",
+      "expected_level": "A"
+    },
+    {
+      "title": "科技型中小企业评价入库",
+      "url": "https://gov.example.com/tech-sme-2026",
+      "snippet": "研发费用加计扣除，滚动申报，面向科技型中小企业，科技部主办",
+      "source_provider": "bocha",
+      "page_content": "科技型中小企业评价入库由科技部主办，面向全国科技型中小企业。入库后可享受研发费用加计扣除 75%-100% 的税收优惠。申报方式：滚动申报，常年受理。申报条件：企业职工总数不超过 500 人，年销售收入不超过 2 亿元，研发费用占销售收入比例不低于 3%。申报入口：https://gov.example.com/apply",
+      "deadline": "",
+      "deadline_status": "rolling",
+      "deadline_source_url": "https://gov.example.com/tech-sme-2026",
+      "reward": "研发费用加计扣除",
+      "organizer": "科技部",
+      "eligibility": "科技型中小企业",
+      "expected_level": "B"
+    },
+    {
+      "title": "数字化转型试点项目申报",
+      "url": "https://gov.example.com/digital-transformation-2026",
+      "snippet": "100 万试点资金，截止 2026-11-15，面向数字化转型企业，发改委主办",
+      "source_provider": "google_cse",
+      "page_content": "数字化转型试点项目申报由发改委主办，面向全国数字化转型企业。入选企业可获得 100 万元试点资金支持。申报截止 2026-11-15。申报条件：企业数字化转型投入 500 万元以上，具有可复制的解决方案。申报入口：https://gov.example.com/apply",
+      "deadline": "2026-11-15",
+      "deadline_status": "confirmed",
+      "deadline_source_url": "https://gov.example.com/digital-transformation-2026",
+      "reward": "100 万试点资金",
+      "organizer": "发改委",
+      "eligibility": "数字化转型企业",
+      "expected_level": "C"
+    },
+    {
+      "title": "2024 年商务领域旧政策补贴（已过期）",
+      "url": "https://gov.example.com/old-commerce-subsidy-2024",
+      "snippet": "20 万补贴，已于 2024-12-31 截止，商务部主办（测试过期数据）",
+      "source_provider": "bocha",
+      "page_content": "2024 年商务领域旧政策补贴由商务部主办，面向商贸流通企业。补贴金额 20 万元。申报截止 2024-12-31，目前已过期。此条数据用于测试过期政策的识别和过滤。申报入口：https://gov.example.com/apply",
+      "deadline": "2024-12-31",
+      "deadline_status": "expired",
+      "deadline_source_url": "https://gov.example.com/old-commerce-subsidy-2024",
+      "reward": "20 万补贴",
+      "organizer": "商务部",
+      "eligibility": "商贸流通企业",
+      "expected_level": "B"
+    }
+  ]
+}

@@ -1,0 +1,76 @@
+{
+  "radar_type": "cultural_heritage",
+  "mode": "mock",
+  "opportunities": [
+    {
+      "title": "国家级非遗代表性传承人申报",
+      "url": "https://gov.example.com/heritage-master-2026",
+      "snippet": "2 万/年传承补助，截止 2026-08-31，面向非遗传承人，文旅部主办",
+      "source_provider": "bocha",
+      "page_content": "国家级非遗代表性传承人申报由文旅部主办，面向全国非物质文化遗产代表性传承人。入选后可获得每年 2 万元传承补助，并享受传承活动支持。申报截止 2026-08-31。申报条件：从事非遗项目传承 20 年以上，具有代表性传承能力。申报入口：https://gov.example.com/apply",
+      "deadline": "2026-08-31",
+      "deadline_status": "confirmed",
+      "deadline_source_url": "https://gov.example.com/heritage-master-2026",
+      "reward": "2 万/年传承补助",
+      "organizer": "文旅部",
+      "eligibility": "非遗传承人",
+      "expected_level": "S"
+    },
+    {
+      "title": "文创产业发展专项资金申报",
+      "url": "https://gov.example.com/cultural-fund-2026",
+      "snippet": "最高 200 万资助，截止 2026-10-15，面向文创企业，文旅部主办",
+      "source_provider": "serper",
+      "page_content": "文创产业发展专项资金申报由文旅部主办，面向全国文化创意产业企业。入选项目可获得最高 200 万元资金资助。申报截止 2026-10-15。申报条件：企业注册 2 年以上，文创产品年销售收入 500 万元以上。申报入口：https://gov.example.com/apply",
+      "deadline": "2026-10-15",
+      "deadline_status": "confirmed",
+      "deadline_source_url": "https://gov.example.com/cultural-fund-2026",
+      "reward": "最高 200 万资助",
+      "organizer": "文旅部",
+      "eligibility": "文创企业",
+      "expected_level": "A"
+    },
+    {
+      "title": "传统工艺振兴计划项目",
+      "url": "https://gov.example.com/traditional-craft-2026",
+      "snippet": "10-50 万资助，滚动申报，面向传统工艺企业，文旅部主办",
+      "source_provider": "bocha",
+      "page_content": "传统工艺振兴计划项目由文旅部主办，面向全国传统工艺企业和传承人。入选项目可获得 10-50 万元资金资助。申报方式：滚动申报，常年受理。申报条件：从事传统工艺生产 3 年以上，具有传承价值。申报入口：https://gov.example.com/apply",
+      "deadline": "",
+      "deadline_status": "rolling",
+      "deadline_source_url": "https://gov.example.com/traditional-craft-2026",
+      "reward": "10-50 万资助",
+      "organizer": "文旅部",
+      "eligibility": "传统工艺企业",
+      "expected_level": "B"
+    },
+    {
+      "title": "非遗工坊建设资助",
+      "url": "https://gov.example.com/heritage-workshop-2026",
+      "snippet": "5 万资助，截止日期待定，面向非遗工坊，省文旅厅主办",
+      "source_provider": "serper",
+      "page_content": "非遗工坊建设资助由省文旅厅主办，面向非遗工坊建设企业。入选工坊可获得 5 万元一次性建设资助。申报截止日期待定（待通知）。申报条件：拥有非遗项目传承人，具备工坊建设场地。申报入口：https://gov.example.com/apply",
+      "deadline": "",
+      "deadline_status": "unknown",
+      "deadline_source_url": "https://gov.example.com/heritage-workshop-2026",
+      "reward": "5 万资助",
+      "organizer": "省文旅厅",
+      "eligibility": "非遗工坊建设企业",
+      "expected_level": "C"
+    },
+    {
+      "title": "2024 年文创设计大赛（已截止）",
+      "url": "https://competition.example.com/cultural-design-2024",
+      "snippet": "10 万奖金，已于 2024-11-30 截止，某协会主办（测试过期数据）",
+      "source_provider": "bocha",
+      "page_content": "2024 年文创设计大赛由某文化协会主办，面向全国文创设计师。比赛旨在推动文创设计与非遗元素融合。奖金设置：一等奖 10 万元。申报截止 2024-11-30，目前已截止。此条数据用于测试过期赛事的识别和过滤。申报入口：https://competition.example.com/register",
+      "deadline": "2024-11-30",
+      "deadline_status": "expired",
+      "deadline_source_url": "https://competition.example.com/cultural-design-2024",
+      "reward": "10 万奖金",
+      "organizer": "某文化协会",
+      "eligibility": "全国文创设计师",
+      "expected_level": "A"
+    }
+  ]
+}
