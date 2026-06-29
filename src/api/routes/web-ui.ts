@@ -120,6 +120,14 @@ export function webUiRoutes(): Hono {
     serveFile("search.js", "application/javascript; charset=utf-8"),
   );
   app.get(
+    "/opportunities.js",
+    serveFile("opportunities.js", "application/javascript; charset=utf-8"),
+  );
+  app.get(
+    "/reports.js",
+    serveFile("reports.js", "application/javascript; charset=utf-8"),
+  );
+  app.get(
     "/watch-rules-editor.js",
     serveFile("watch-rules-editor.js", "application/javascript; charset=utf-8"),
   );

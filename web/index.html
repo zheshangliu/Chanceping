@@ -119,16 +119,112 @@
 
     <!-- Tab 4: 机会库 -->
     <section class="tab-panel" id="panel-opportunities">
-      <div class="placeholder-panel">
-        <p>机会库面板（Task 040 实现）</p>
-        <div id="opportunities-list"></div>
+      <div class="opp-library-container">
+        <!-- 统计概览 -->
+        <div class="stats-bar" id="opp-stats-bar">
+          <span class="stat-item" id="stat-total">总数：0</span>
+          <span class="stat-item" id="stat-starred">收藏：0</span>
+          <span class="stat-item" id="stat-expiring">即将截止：0</span>
+          <span class="stat-item" id="stat-expired">已过期：0</span>
+        </div>
+        <!-- 截止提醒区 -->
+        <div class="reminder-section" id="reminder-section">
+          <h4>📅 截止提醒</h4>
+          <div class="reminder-list" id="reminder-list">
+            <p class="placeholder">暂无提醒</p>
+          </div>
+        </div>
+        <!-- 筛选栏 -->
+        <div class="filter-bar">
+          <select id="filter-radar">
+            <option value="">全部雷达</option>
+            <option value="ai_competition">AI 赛事</option>
+            <option value="opc_policy">政策申报</option>
+            <option value="cultural_heritage">文创非遗</option>
+          </select>
+          <select id="filter-level">
+            <option value="">全部等级</option>
+            <option value="S">S</option>
+            <option value="A">A</option>
+            <option value="B">B</option>
+            <option value="C">C</option>
+          </select>
+          <select id="filter-status">
+            <option value="">全部状态</option>
+            <option value="new">新发现</option>
+            <option value="viewed">已查看</option>
+            <option value="tracking">跟踪中</option>
+            <option value="saved">已保存</option>
+            <option value="applied">已报名</option>
+            <option value="missed">已错过</option>
+            <option value="expired">已过期</option>
+            <option value="archived">已归档</option>
+            <option value="dismissed">已忽略</option>
+          </select>
+          <label class="filter-starred-label">
+            <input type="checkbox" id="filter-starred"> 仅看收藏
+          </label>
+          <select id="sort-by">
+            <option value="deadline">截止日期</option>
+            <option value="backend_score">分数</option>
+            <option value="added_at">入库时间</option>
+            <option value="visible_level">等级</option>
+          </select>
+          <select id="sort-order">
+            <option value="asc">升序</option>
+            <option value="desc">降序</option>
+          </select>
+          <button id="btn-refresh-opp" class="btn-refresh">刷新</button>
+        </div>
+        <!-- 机会列表 -->
+        <div class="opp-list" id="opp-list">
+          <p class="placeholder">点击"刷新"加载机会列表</p>
+        </div>
+        <!-- 分页 -->
+        <div class="pagination" id="opp-pagination"></div>
       </div>
     </section>
 
     <!-- Tab 5: 报告 -->
     <section class="tab-panel" id="panel-reports">
-      <div class="placeholder-panel">
-        <p>报告面板（Task 040 实现）</p>
+      <div class="reports-container">
+        <!-- 报告生成区 -->
+        <div class="report-generate-section">
+          <h4>报告生成</h4>
+          <div class="report-form">
+            <label class="report-field">
+              雷达类型
+              <select id="report-radar">
+                <option value="ai_competition">AI 赛事</option>
+                <option value="opc_policy">政策申报</option>
+                <option value="cultural_heritage">文创非遗</option>
+              </select>
+            </label>
+            <label class="report-field">开始日期 <input type="date" id="report-period-start"></label>
+            <label class="report-field">结束日期 <input type="date" id="report-period-end"></label>
+            <button id="btn-generate-report" class="btn-primary">生成报告</button>
+          </div>
+        </div>
+        <!-- 报告预览区 -->
+        <div class="report-preview-section" id="report-preview-section" style="display:none;">
+          <h4>报告预览 <span class="report-stats" id="report-stats"></span></h4>
+          <div class="report-preview" id="report-preview">
+            <!-- Markdown 渲染 -->
+          </div>
+          <div class="report-export-bar">
+            <span>导出格式：</span>
+            <button class="export-btn" data-format="markdown">Markdown</button>
+            <button class="export-btn" data-format="html">HTML</button>
+            <button class="export-btn" data-format="pdf">PDF</button>
+          </div>
+        </div>
+        <!-- 历史报告区 -->
+        <div class="report-history-section">
+          <h4>历史报告</h4>
+          <div class="report-history-list" id="report-history-list">
+            <p class="placeholder">暂无历史报告</p>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -204,6 +300,8 @@ $北京
   <script src="/home.js"></script>
   <script src="/requirement-chat.js"></script>
   <script src="/search.js"></script>
+  <script src="/opportunities.js"></script>
+  <script src="/reports.js"></script>
   <script src="/watch-rules-editor.js"></script>
 </body>
 </html>

@@ -4,6 +4,7 @@ import type { ApiResponse, OpportunityAddRequest, OpportunityUpdateRequest } fro
 import type { OpportunityCard } from "../../schema/opportunity-card";
 import type { Feedback, ActionIntent, FeedbackEvaluation, ActionIntentType, ActionStatusType } from "../../schema/feedback";
 import type { StoreQuery, StoreEntry, RadarType } from "../../agents/opportunity-store";
+import { batchAutoTransition } from "../../agents/opportunity-state-machine";
 
 export function opportunityRoutes(ctx: AppContext): Hono {
   const app = new Hono();
@@ -30,10 +31,22 @@ export function opportunityRoutes(ctx: AppContext): Hono {
     }
   });
 
-  // GET / - 列表查询
+  // GET / - 列表查询（Task 040 扩展：sort_by/sort_order/expiring_soon/deadline_from/deadline_to + 查询前自动过期）
   app.get("/", (c) => {
     const start = Date.now();
     try {
+      // 查询前执行自动过期扫描（batchAutoTransition，Task 040 F6 接入）
+      // V1.1 简单实现：每次查询都扫描全量（数据量小，性能可接受）
+      const allEntries = ctx.store.list({ page_size: 10000 }).entries;
+      const transitions = batchAutoTransition(
+        allEntries.map((e) => ({ dedup_key: e.dedup_key, card: e.card })),
+        new Date(),
+      );
+      for (const t of transitions) {
+        // 回写过期/错过状态到 store（store 接口为 update）
+        ctx.store.update(t.dedup_key, { status: t.to });
+      }
+
       const q: StoreQuery = {};
       const radarType = c.req.query("radar_type");
       if (radarType) q.radar_type = radarType as RadarType;
@@ -47,6 +60,17 @@ export function opportunityRoutes(ctx: AppContext): Hono {
       if (page) q.page = parseInt(page, 10);
       const pageSize = c.req.query("page_size");
       if (pageSize) q.page_size = parseInt(pageSize, 10);
+      // Task 040 新增查询参数
+      const sortBy = c.req.query("sort_by") as StoreQuery["sort_by"] | undefined;
+      if (sortBy) q.sort_by = sortBy;
+      const sortOrder = c.req.query("sort_order") as StoreQuery["sort_order"] | undefined;
+      if (sortOrder) q.sort_order = sortOrder;
+      const expiringSoon = c.req.query("expiring_soon");
+      if (expiringSoon === "true") q.expiring_soon = true;
+      const deadlineFrom = c.req.query("deadline_from");
+      if (deadlineFrom) q.deadline_from = deadlineFrom;
+      const deadlineTo = c.req.query("deadline_to");
+      if (deadlineTo) q.deadline_to = deadlineTo;
       const result = ctx.store.list(q);
       return c.json({ success: true, data: result, error: null, duration_ms: Date.now() - start } satisfies ApiResponse);
     } catch (err) {

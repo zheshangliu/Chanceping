@@ -26,6 +26,8 @@ function switchTab(tabName) {
   document.querySelectorAll(".tab-panel").forEach((panel) => {
     panel.classList.toggle("active", panel.id === `panel-${tabName}`);
   });
+  // Task 040: 派发 tab-switched 事件，供 opportunities.js / reports.js 监听加载
+  window.dispatchEvent(new CustomEvent("tab-switched", { detail: { tab: tabName } }));
 }
 
 /**
