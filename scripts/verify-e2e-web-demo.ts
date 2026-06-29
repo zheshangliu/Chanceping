@@ -39,6 +39,11 @@ import path from "path";
 import { serve } from "@hono/node-server";
 import { createApp } from "../src/api/app";
 
+// DOM 全局变量声明（puppeteer evaluate/waitForFunction 回调在浏览器环境执行）
+// tsconfig.json 的 lib 不含 "DOM"，这里声明最小 DOM 类型供 E2E 脚本使用
+declare const document: any;
+declare const window: any;
+
 // ============================================================
 // 2. 测试框架
 // ============================================================
@@ -63,7 +68,7 @@ function logStep(step: number, name: string, passed: boolean, reason?: string): 
   }
 }
 
-async function screenshot(page: import("puppeteer").Page, step: number, name: string): Promise<void> {
+async function screenshot(page: any, step: number, name: string): Promise<void> {
   if (!fs.existsSync(SCREENSHOT_DIR)) {
     fs.mkdirSync(SCREENSHOT_DIR, { recursive: true });
   }
@@ -90,7 +95,7 @@ async function startServer(): Promise<{ close: () => void }> {
 
 async function runWebE2E(): Promise<void> {
   // 动态 import puppeteer（可能未安装）
-  let puppeteer: typeof import("puppeteer");
+  let puppeteer: any;
   try {
     if (process.env.PUPPETEER_SKIP === "true") {
       throw new Error("PUPPETEER_SKIP=true");
@@ -178,7 +183,7 @@ async function runWebE2E(): Promise<void> {
           },
           { timeout: 15000 },
         );
-        const confTotal = await page.$eval("#conf-total", (el) => parseInt(el.textContent || "0", 10));
+        const confTotal = await page.$eval("#conf-total", (el: any) => parseInt(el.textContent || "0", 10));
         logStep(3, "确认度提升", confTotal > 0, `conf-total=${confTotal}`);
       } catch {
         logStep(3, "确认度提升", false, "15s 内 #conf-total 未 > 0");
@@ -196,7 +201,7 @@ async function runWebE2E(): Promise<void> {
       // 尝试点击"开始搜索"按钮（如已启用）
       const startSearchBtn = await page.$("#start-search-btn");
       if (startSearchBtn) {
-        const disabled = await page.$eval("#start-search-btn", (el) => (el as HTMLButtonElement).disabled);
+        const disabled = await page.$eval("#start-search-btn", (el: any) => (el as any).disabled);
         if (!disabled) {
           await page.click("#start-search-btn");
         }
@@ -204,11 +209,11 @@ async function runWebE2E(): Promise<void> {
       // 等待搜索结果
       try {
         await page.waitForSelector("#search-results .opp-card", { timeout: 15000 });
-        const cardCount = await page.$$eval("#search-results .opp-card", (els) => els.length);
+        const cardCount = await page.$$eval("#search-results .opp-card", (els: any) => els.length);
         logStep(4, "搜索结果含机会卡片", cardCount > 0, `card count=${cardCount}`);
       } catch {
         // 兜底：可能搜索结果用了其他选择器
-        const searchHtml = await page.$eval("#search-results", (el) => el.innerHTML);
+        const searchHtml = await page.$eval("#search-results", (el: any) => el.innerHTML);
         logStep(4, "搜索结果含机会卡片", searchHtml.length > 100, `html length=${searchHtml.length}`);
       }
     } catch {
@@ -243,7 +248,7 @@ async function runWebE2E(): Promise<void> {
       await page.waitForSelector("#panel-opportunities.active", { timeout: 5000 });
       // 等待机会库加载
       await new Promise((r) => setTimeout(r, 1500));
-      const oppListHtml = await page.$eval("#opp-list", (el) => el.innerHTML);
+      const oppListHtml = await page.$eval("#opp-list", (el: any) => el.innerHTML);
       const reminderVisible = await page.$("#reminder-section");
       logStep(
         6,
@@ -275,7 +280,7 @@ async function runWebE2E(): Promise<void> {
             },
             { timeout: 15000 },
           );
-          const reportHtml = await page.$eval("#report-preview", (el) => el.innerHTML);
+          const reportHtml = await page.$eval("#report-preview", (el: any) => el.innerHTML);
           logStep(7, "报告生成", reportHtml.length > 50, `report html=${reportHtml.length}`);
         } catch {
           logStep(7, "报告生成", false, "15s 内 #report-preview 未填充");
