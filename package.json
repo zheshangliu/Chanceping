@@ -27,6 +27,9 @@
     "verify:task038": "tsx scripts/verify-task038.ts",
     "verify:task039": "tsx scripts/verify-task039.ts",
     "verify:task040": "tsx scripts/verify-task040.ts",
+    "demo": "tsx scripts/demo-start.ts",
+    "verify:e2e-web-demo": "tsx scripts/verify-e2e-web-demo.ts",
+    "verify:task041": "tsx scripts/verify-task041.ts",
     "precheck": "tsx scripts/precheck.ts"
   },
   "dependencies": {

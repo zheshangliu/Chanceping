@@ -54,6 +54,13 @@ window.showToast = showToast;
 // ============================================================
 
 document.addEventListener("DOMContentLoaded", () => {
+  // Task 041: Demo Mode 标识（URL 参数 ?demo=true 触发显示）
+  const urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get("demo") === "true") {
+    const badge = document.getElementById("demo-badge");
+    if (badge) badge.style.display = "inline-block";
+  }
+
   const input = document.getElementById("home-input");
   const startBtn = document.getElementById("home-start-btn");
   if (!input || !startBtn) return;
