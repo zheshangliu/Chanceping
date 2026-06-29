@@ -679,7 +679,7 @@ console.log("\n[验收 5.7] 编译与引用\n");
   check("reminder-renderer 导出 renderRemindersMarkdown", rendererContent.includes("export function renderRemindersMarkdown"));
   check("reminder-renderer 导出 renderRemindersJson", rendererContent.includes("export function renderRemindersJson"));
   check("reminder-renderer 导出 renderSingleReminder", rendererContent.includes("export function renderSingleReminder"));
-  check("reminder-renderer 不硬编码品牌名", !rendererContent.includes('"盯一下 ChancePing"'));
+  check("reminder-renderer 不硬编码品牌名", !rendererContent.includes('"盯机会 ChancePing"'));
 }
 
 // ============================================================

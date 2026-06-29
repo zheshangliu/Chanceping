@@ -389,8 +389,8 @@ export function renderRemindersForChannel(
  * wechat 渠道渲染。
  *
  * 格式：
- *   【紧急提醒】盯一下 {BRAND.product_name}   ← 有紧急项时
- *   【提醒】盯一下 {BRAND.product_name}       ← 无紧急项时
+ *   【紧急提醒】盯机会 {BRAND.product_name}   ← 有紧急项时
+ *   【提醒】盯机会 {BRAND.product_name}       ← 无紧急项时
  *   🔴 [紧急] 机会名称（还有N天）→ URL
  *   🟡 [即将] 机会名称（还有N天）→ URL
  *   🔵 [提醒] 机会名称（还有N天）→ URL
@@ -408,7 +408,7 @@ function renderForWechat(result: ReminderResult): string {
 
   // 标题行
   const titlePrefix = result.summary.urgent_count > 0 ? "【紧急提醒】" : "【提醒】";
-  lines.push(`${titlePrefix}盯一下 ${BRAND.product_name}`);
+  lines.push(`${titlePrefix}盯机会 ${BRAND.product_name}`);
   lines.push("");
 
   // 各级别提醒

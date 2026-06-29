@@ -204,7 +204,7 @@ console.log("\n[验收 5.5] 编译与引用");
 const promptSrcPath = path.resolve(process.cwd(), "src/prompts/requirement-confirmation-system-prompt.ts");
 const promptSrc = fs.readFileSync(promptSrcPath, "utf-8");
 check("system prompt 源码引用 BRAND.product_name", promptSrc.includes("BRAND.product_name"));
-check('system prompt 源码不硬编码 "盯一下 ChancePing" 字面量', !promptSrc.includes("盯一下 ChancePing"));
+check('system prompt 源码不硬编码 "盯机会 ChancePing" 字面量', !promptSrc.includes("盯机会 ChancePing"));
 
 // 运行时 prompt 字符串包含品牌名（证明引用生效）
 check("运行时 prompt 字符串含品牌名（引用生效）", prompt.includes(BRAND.product_name));

@@ -21,7 +21,8 @@
     "verify:notify": "tsx scripts/verify-task029.ts",
     "verify:review": "tsx scripts/verify-task030.ts",
     "verify:export": "tsx scripts/verify-task031.ts",
-    "verify:task034": "tsx scripts/verify-task034.ts"
+    "verify:task034": "tsx scripts/verify-task034.ts",
+    "precheck": "tsx scripts/precheck.ts"
   },
   "dependencies": {
     "@hono/node-server": "^1.13.0",

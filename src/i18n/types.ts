@@ -44,7 +44,7 @@ export interface MultilingualOpportunity {
 /** 术语表（glossary）：中英互译 */
 export const GLOSSARY: Record<string, Record<string, string>> = {
   "zh-CN": {
-    盯一下: "ChancePing",
+    盯机会: "ChancePing",
     机会雷达: "Opportunity Radar",
     需求确认卡: "Requirement Confirmation Card",
     雷达方案: "Radar Plan",
@@ -58,7 +58,7 @@ export const GLOSSARY: Record<string, Record<string, string>> = {
     截止日期: "Deadline",
   },
   "en-US": {
-    ChancePing: "盯一下",
+    ChancePing: "盯机会",
     "Opportunity Radar": "机会雷达",
     "Requirement Confirmation Card": "需求确认卡",
     "Radar Plan": "雷达方案",

@@ -330,7 +330,7 @@ console.log("\n[验收 5.7] 编译与引用\n");
 
 {
   // BRAND.product_name 已引用
-  check("BRAND.product_name 已引用", BRAND.product_name === "盯一下 ChancePing");
+  check("BRAND.product_name 已引用", BRAND.product_name === "盯机会 ChancePing");
 
   // MUST_INCLUDE_SECTIONS 已引用
   check("MUST_INCLUDE_SECTIONS 已引用（9 项）", MUST_INCLUDE_SECTIONS.length === 9);

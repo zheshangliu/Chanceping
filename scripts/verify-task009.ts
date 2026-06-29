@@ -409,7 +409,7 @@ console.log("\n[验收 5.7] 编译与引用\n");
 
 {
   // 品牌名、报告前缀、报告结构从常量引用
-  check("BRAND.product_name 已引用", BRAND.product_name === "盯一下 ChancePing");
+  check("BRAND.product_name 已引用", BRAND.product_name === "盯机会 ChancePing");
   check("REPORT_TITLE_PREFIX 已引用", REPORT_TITLE_PREFIX === `${BRAND.product_name}｜`);
   check("MUST_INCLUDE_SECTIONS 含 9 项", MUST_INCLUDE_SECTIONS.length === 9);
   check("OPPORTUNITY_CARD_REQUIRED_FIELDS 含 14 项", OPPORTUNITY_CARD_REQUIRED_FIELDS.length === 14);

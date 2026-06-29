@@ -101,7 +101,7 @@ function checkByteSplitter(): void {
   assert(r1.originalBytes === Buffer.byteLength(shortText, "utf-8"), "F1 原始字节数正确");
 
   // F2: 长文本拆分
-  const longText = "【提醒】盯一下 ChancePing\n\n" + "🔴 [紧急] 机会1\n".repeat(200);
+  const longText = "【提醒】盯机会 ChancePing\n\n" + "🔴 [紧急] 机会1\n".repeat(200);
   const r2 = splitByBytes(longText, { maxBytes: 2048 });
   assert(r2.totalParts >= 2, "F2 长文本 → totalParts >= 2");
   assert(r2.messages.length >= 2, "F2 长文本 → messages >= 2 条");
@@ -219,7 +219,7 @@ async function checkWeChatAdapter(): Promise<void> {
   assert(result.mock_mode === true, "F8 mock_mode = true");
 
   // F9: 长文本拆分为多条
-  const longMsg = "【提醒】盯一下 ChancePing\n\n" + "🔴 [紧急] 机会1\n".repeat(200);
+  const longMsg = "【提醒】盯机会 ChancePing\n\n" + "🔴 [紧急] 机会1\n".repeat(200);
   const result2 = await adapter.send([longMsg]);
   assert(result2.messages_sent >= 2, "F9 长文本 → messages_sent >= 2");
   assert(result2.success === true, "F9 长文本 → success = true");

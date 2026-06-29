@@ -403,7 +403,7 @@ console.log("\n[验收 5.6] 导出功能\n");
 console.log("\n[验收 5.7] 编译与引用\n");
 
 {
-  check("BRAND.product_name 已引用", BRAND.product_name === "盯一下 ChancePing");
+  check("BRAND.product_name 已引用", BRAND.product_name === "盯机会 ChancePing");
   check("MUST_INCLUDE_SECTIONS 已引用（9 项）", MUST_INCLUDE_SECTIONS.length === 9);
   check("OPPORTUNITY_CARD_REQUIRED_FIELDS 已引用（14 项）", OPPORTUNITY_CARD_REQUIRED_FIELDS.length === 14);
 

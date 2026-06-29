@@ -513,7 +513,7 @@ console.log("\n[验收 5.5] 编译与引用\n");
   check("exporter 引用 fs 模块", exporterContent.includes("import fs from"));
   check("exporter 引用 path 模块", exporterContent.includes("import path from"));
   check("exporter 引用 appendToArchive", exporterContent.includes("import { appendToArchive }"));
-  check("exporter 不硬编码 '盯一下 ChancePing'", !exporterContent.includes('"盯一下 ChancePing"'));
+  check("exporter 不硬编码 '盯机会 ChancePing'", !exporterContent.includes('"盯机会 ChancePing"'));
 
   // 检查 report-archive.ts 内容含必要 import
   const archiveContent = fs.readFileSync(archivePath, "utf-8");

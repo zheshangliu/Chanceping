@@ -124,6 +124,13 @@ textarea {
   color: var(--accent);
 }
 
+.logo {
+  max-height: 40px;
+  width: auto;
+  margin-right: 12px;
+  vertical-align: middle;
+}
+
 .header-actions {
   display: flex;
   align-items: center;

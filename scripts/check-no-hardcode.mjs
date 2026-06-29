@@ -1,5 +1,5 @@
 /**
- * 验收 #5：检查代码中不得硬编码品牌产品名 "盯一下 ChancePing"。
+ * 验收 #5：检查代码中不得硬编码品牌产品名 "盯机会 ChancePing"。
  *
  * 仅扫描 src/ 下的 .ts 代码（排除 src/brand/constants.ts 常量单一来源）。
  * 示例数据 data/samples/sample-spec.json 属数据文件，按"文档/数据"口径豁免。
@@ -11,7 +11,7 @@ import fs from "fs";
 import path from "path";
 
 const ROOT = path.resolve(process.cwd(), "src");
-const NEEDLE = "盯一下 ChancePing";
+const NEEDLE = "盯机会 ChancePing";
 const EXCLUDE = path.join(ROOT, "brand", "constants.ts");
 
 const hits = [];

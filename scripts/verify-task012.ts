@@ -464,7 +464,7 @@ console.log("\n[验收 5.9] 编译与引用\n");
   check("引用 RadarRequirementSpec 类型", generatorContent.includes("RadarRequirementSpec"));
   check("引用 OpportunityCard 类型", generatorContent.includes("OpportunityCard"));
   check("引用 VisibleLevel 类型", generatorContent.includes("VisibleLevel"));
-  check("不硬编码 '盯一下 ChancePing'", !generatorContent.includes('"盯一下 ChancePing"'));
+  check("不硬编码 '盯机会 ChancePing'", !generatorContent.includes('"盯机会 ChancePing"'));
 
   // 检查 MUST_INCLUDE_SECTIONS 长度为 9
   check("MUST_INCLUDE_SECTIONS 长度为 9", MUST_INCLUDE_SECTIONS.length === 9, `len=${MUST_INCLUDE_SECTIONS.length}`);

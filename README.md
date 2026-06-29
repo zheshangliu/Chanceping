@@ -1,6 +1,10 @@
 # ChancePing 盯机会
 
-> 盯一下，好机会不错过。
+<p align="center">
+  <img src="web/assets/logo.png" alt="ChancePing 盯机会" width="200" />
+</p>
+
+> 盯机会，好机会不错过。
 
 AI 机会情报系统 —— 告诉 AI 你要盯什么，ChancePing 帮你找到对的机会，在对的时间提醒你。
 

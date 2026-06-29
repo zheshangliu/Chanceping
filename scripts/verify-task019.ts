@@ -424,7 +424,7 @@ async function main(): Promise<void> {
 
     const wechatOutput = renderRemindersForChannel(reminders, "wechat");
     check("T5: wechat 渲染非空", typeof wechatOutput === "string" && wechatOutput.length > 0);
-    check("T5: wechat 含品牌名", wechatOutput.includes("ChancePing") || wechatOutput.includes("盯一下"));
+    check("T5: wechat 含品牌名", wechatOutput.includes("ChancePing") || wechatOutput.includes("盯机会"));
 
     const emailOutput = renderRemindersForChannel(reminders, "email");
     check("T5: email 渲染非空", typeof emailOutput === "string" && emailOutput.length > 0);

@@ -441,12 +441,12 @@ async function main(): Promise<void> {
 
   check(
     "现有 BRAND 常量保留不变",
-    BRAND.product_name === "盯一下 ChancePing",
+    BRAND.product_name === "盯机会 ChancePing",
   );
 
   check(
     "现有 REPORT_TITLE_PREFIX 保留不变",
-    REPORT_TITLE_PREFIX === "盯一下 ChancePing｜",
+    REPORT_TITLE_PREFIX === "盯机会 ChancePing｜",
   );
 
   check(
@@ -519,7 +519,7 @@ async function main(): Promise<void> {
   console.log("\n=== 5.7 术语表 glossary ===");
 
   const zhCNRequiredTerms: Record<string, string> = {
-    "盯一下": "ChancePing",
+    "盯机会": "ChancePing",
     "机会雷达": "Opportunity Radar",
     "需求确认卡": "Requirement Confirmation Card",
     "雷达方案": "Radar Plan",
@@ -544,7 +544,7 @@ async function main(): Promise<void> {
   check("GLOSSARY['zh-CN'] 覆盖 12 个核心术语（zh→en）", allZhTermsPresent);
 
   const enUSRequiredTerms: Record<string, string> = {
-    "ChancePing": "盯一下",
+    "ChancePing": "盯机会",
     "Opportunity Radar": "机会雷达",
     "Requirement Confirmation Card": "需求确认卡",
     "Radar Plan": "雷达方案",

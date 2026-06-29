@@ -442,7 +442,7 @@ console.log("\n[验收 5.7] 编译与引用\n");
 
 {
   // 品牌名从 BRAND.product_name 引用（不硬编码）
-  check("BRAND.product_name 已引用", BRAND.product_name === "盯一下 ChancePing");
+  check("BRAND.product_name 已引用", BRAND.product_name === "盯机会 ChancePing");
 
   // 报告结构从 MUST_INCLUDE_SECTIONS 引用（不硬编码）
   check("MUST_INCLUDE_SECTIONS 含 9 项", MUST_INCLUDE_SECTIONS.length === 9, `actual=${MUST_INCLUDE_SECTIONS.length}`);
