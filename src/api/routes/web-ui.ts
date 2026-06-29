@@ -6,6 +6,8 @@
  * 提供：
  *   - GET /           → web/index.html
  *   - GET /styles.css → web/styles.css
+ *   - GET /home.js    → web/home.js（Task 038 新增）
+ *   - GET /requirement-chat.js → web/requirement-chat.js（Task 038 新增）
  *   - GET /watch-rules-editor.js → web/watch-rules-editor.js
  *   - GET /assets/*   → web/assets/* 二进制静态资源（Logo 等）
  *   - GET /*          → fallback 到 index.html（SPA 模式）
@@ -104,6 +106,14 @@ export function webUiRoutes(): Hono {
 
   // 静态资源
   app.get("/styles.css", serveFile("styles.css", "text/css; charset=utf-8"));
+  app.get(
+    "/home.js",
+    serveFile("home.js", "application/javascript; charset=utf-8"),
+  );
+  app.get(
+    "/requirement-chat.js",
+    serveFile("requirement-chat.js", "application/javascript; charset=utf-8"),
+  );
   app.get(
     "/watch-rules-editor.js",
     serveFile("watch-rules-editor.js", "application/javascript; charset=utf-8"),

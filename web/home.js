@@ -1,0 +1,144 @@
+/**
+ * ChancePing 首页 Tab 逻辑
+ * 来源：Task 038 第 5 节
+ *
+ * 职责：
+ *   - 首页输入框 + 快捷示例
+ *   - 提交后直接调用 POST /api/chat 发送第一条消息
+ *   - 切换到"需求确认"Tab，并触发 home-chat-response 事件（携带响应数据）
+ *   - 暴露全局 switchTab / showToast 函数供其他模块共用
+ *
+ * 纯 JS，无框架，无构建工具。
+ */
+
+// ============================================================
+// 全局工具函数（供 home.js / requirement-chat.js / watch-rules-editor.js 共用）
+// ============================================================
+
+/**
+ * 切换到指定 Tab。
+ * @param {string} tabName - Tab 名称（home / chat / search / opportunities / reports / editor）
+ */
+function switchTab(tabName) {
+  document.querySelectorAll(".tab-btn").forEach((btn) => {
+    btn.classList.toggle("active", btn.dataset.tab === tabName);
+  });
+  document.querySelectorAll(".tab-panel").forEach((panel) => {
+    panel.classList.toggle("active", panel.id === `panel-${tabName}`);
+  });
+}
+
+/**
+ * 显示 Toast 提示。
+ * @param {string} message - 提示文案
+ * @param {string} [type] - 类型：success / error / warning
+ */
+function showToast(message, type) {
+  const toast = document.getElementById("toast");
+  if (!toast) return;
+  toast.textContent = message;
+  toast.className = `toast show ${type || ""}`;
+  setTimeout(() => {
+    toast.classList.remove("show");
+  }, 2500);
+}
+
+// 暴露到全局
+window.switchTab = switchTab;
+window.showToast = showToast;
+
+// ============================================================
+// 首页逻辑
+// ============================================================
+
+document.addEventListener("DOMContentLoaded", () => {
+  const input = document.getElementById("home-input");
+  const startBtn = document.getElementById("home-start-btn");
+  if (!input || !startBtn) return;
+
+  // 开始按钮：提交需求，切换到需求确认 Tab，并发送第一条消息
+  startBtn.addEventListener("click", () => {
+    const text = input.value.trim();
+    if (!text) {
+      showToast("请输入你想盯的机会", "warning");
+      return;
+    }
+
+    // 切换到需求确认 Tab
+    switchTab("chat");
+
+    // 触发 home-submit 事件（通知 requirement-chat.js 重置状态并准备接收）
+    window.dispatchEvent(
+      new CustomEvent("home-submit", {
+        detail: { message: text, radar_type: "ai_competition" },
+      }),
+    );
+
+    // 直接调用 POST /api/chat 发送第一条消息
+    sendFirstMessage(text, "ai_competition");
+
+    // 清空首页输入框
+    input.value = "";
+  });
+
+  // Enter 提交（Shift+Enter 换行）
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      startBtn.click();
+    }
+  });
+
+  // 快捷示例：点击后填入输入框并提交
+  document.querySelectorAll(".example-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      input.value = btn.dataset.text || "";
+      startBtn.click();
+    });
+  });
+});
+
+/**
+ * 发送第一条消息到 /api/chat，并把响应通过事件传给 requirement-chat.js。
+ * @param {string} message - 用户输入的需求
+ * @param {string} radarType - 雷达类型
+ */
+async function sendFirstMessage(message, radarType) {
+  // 先通知 requirement-chat.js 追加用户消息 + 显示 typing
+  window.dispatchEvent(
+    new CustomEvent("chat-user-message", { detail: { message } }),
+  );
+  window.dispatchEvent(new CustomEvent("chat-typing-start"));
+
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message,
+        radar_type: radarType,
+      }),
+    });
+    const json = await res.json();
+
+    window.dispatchEvent(new CustomEvent("chat-typing-end"));
+
+    if (json.success) {
+      // 把响应传给 requirement-chat.js 更新 UI
+      window.dispatchEvent(
+        new CustomEvent("home-chat-response", { detail: json.data }),
+      );
+    } else {
+      window.dispatchEvent(
+        new CustomEvent("chat-error", {
+          detail: { message: json.error?.message || "请求失败" },
+        }),
+      );
+    }
+  } catch (err) {
+    window.dispatchEvent(new CustomEvent("chat-typing-end"));
+    window.dispatchEvent(
+      new CustomEvent("chat-error", { message: err.message }),
+    );
+  }
+}

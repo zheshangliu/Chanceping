@@ -603,3 +603,522 @@ textarea {
     height: 200px;
   }
 }
+
+/* ============================================================
+ * 首页 Tab（Task 038 第 5 节）
+ * ============================================================ */
+
+.home-container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  text-align: center;
+}
+
+.home-hero {
+  margin-bottom: 32px;
+}
+
+.home-logo {
+  width: 96px;
+  height: 96px;
+  margin-bottom: 16px;
+  border-radius: 16px;
+}
+
+.home-title {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.home-subtitle {
+  font-size: 15px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+}
+
+.home-input-area {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.home-input-area textarea {
+  flex: 1;
+  padding: 12px 16px;
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: vertical;
+  min-height: 56px;
+}
+
+.home-input-area textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.home-input-area #home-start-btn {
+  align-self: flex-end;
+  padding: 12px 28px;
+  background-color: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.home-input-area #home-start-btn:hover {
+  background-color: var(--accent-hover);
+}
+
+.home-examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+.examples-label {
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+
+.example-btn {
+  padding: 6px 14px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  font-size: 13px;
+}
+
+.example-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ============================================================
+ * 需求确认 Tab（Task 038 第 6 节）
+ * ============================================================ */
+
+.chat-layout {
+  display: flex;
+  gap: 16px;
+  height: calc(100vh - 140px);
+}
+
+/* 对话区（左侧 60%） */
+.chat-area {
+  flex: 0 0 60%;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.chat-messages .placeholder {
+  color: var(--text-muted);
+  text-align: center;
+  margin-top: 40px;
+}
+
+.message-bubble {
+  max-width: 80%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.5;
+  word-wrap: break-word;
+}
+
+.message-user {
+  align-self: flex-end;
+  background-color: var(--accent);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.message-ai {
+  align-self: flex-start;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border-bottom-left-radius: 4px;
+}
+
+.message-error {
+  align-self: center;
+  background-color: transparent;
+  color: var(--error);
+  border: 1px solid var(--error);
+  font-size: 13px;
+}
+
+.message-summary {
+  margin-bottom: 8px;
+}
+
+.message-questions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.question-chip {
+  align-self: flex-start;
+  padding: 4px 10px;
+  background-color: var(--highlight-bg);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.question-chip:hover {
+  border-color: var(--accent);
+}
+
+.message-status {
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+/* typing 动画 */
+.typing-indicator {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.typing-indicator .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--text-secondary);
+  animation: typing-bounce 1.4s infinite;
+}
+
+.typing-indicator .dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.typing-indicator .dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
+  30% { transform: translateY(-6px); opacity: 1; }
+}
+
+/* 输入区 */
+.chat-input-area {
+  display: flex;
+  gap: 8px;
+  padding: 12px;
+  border-top: 1px solid var(--border);
+}
+
+.chat-input-area textarea {
+  flex: 1;
+  padding: 8px 12px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  resize: none;
+}
+
+.chat-input-area textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.chat-input-area #chat-send-btn {
+  align-self: flex-end;
+  padding: 8px 20px;
+  background-color: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+.chat-input-area #chat-send-btn:hover {
+  background-color: var(--accent-hover);
+}
+
+/* ============================================================
+ * 确认卡（右侧 40%）
+ * ============================================================ */
+
+.confirmation-card {
+  flex: 0 0 40%;
+  padding: 16px;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* 确认度总分 */
+.confidence-section {
+  text-align: center;
+}
+
+.confidence-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.confidence-number {
+  font-size: 36px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+.confidence-unit {
+  font-size: 18px;
+  color: var(--text-secondary);
+}
+
+.confidence-bar {
+  height: 10px;
+  background-color: var(--bg-tertiary);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.confidence-bar-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 5px;
+  transition: width 0.4s ease, background-color 0.4s ease;
+}
+
+.confidence-bar-fill.low {
+  background-color: var(--error);
+}
+
+.confidence-bar-fill.mid {
+  background-color: var(--warning);
+}
+
+.confidence-bar-fill.high {
+  background-color: var(--success);
+}
+
+.confidence-delta {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--text-secondary);
+  min-height: 18px;
+}
+
+.confidence-delta.positive {
+  color: var(--success);
+}
+
+/* 已确认 / 待确认 */
+.confirmed-section h4,
+.uncertain-section h4,
+.dimensions-section h4 {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--border);
+}
+
+.confirmed-section ul,
+.uncertain-section ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.confirmed-item,
+.uncertain-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 13px;
+}
+
+.confirmed-item .check {
+  color: var(--success);
+  font-weight: 700;
+}
+
+.uncertain-item .question {
+  color: var(--warning);
+  font-weight: 700;
+}
+
+.confirmed-item .label,
+.uncertain-item .label {
+  color: var(--text-secondary);
+  min-width: 70px;
+}
+
+.confirmed-item .value {
+  color: var(--text-primary);
+  flex: 1;
+}
+
+.uncertain-item .hint {
+  color: var(--text-secondary);
+  flex: 1;
+  font-style: italic;
+}
+
+.placeholder {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* 7 维度明细 */
+.dimensions-section {
+  flex: 1;
+}
+
+#dimensions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.dimension-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.dimension-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 12px;
+}
+
+.dimension-label {
+  color: var(--text-secondary);
+}
+
+.dimension-score {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.dimension-bar {
+  height: 6px;
+  background-color: var(--bg-tertiary);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.dimension-bar-fill {
+  height: 100%;
+  background-color: var(--accent);
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.dimension-weight {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* 开始搜索按钮 */
+.primary-btn {
+  padding: 12px 20px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: not-allowed;
+}
+
+.primary-btn.enabled {
+  background-color: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+  cursor: pointer;
+}
+
+.primary-btn.enabled:hover {
+  background-color: var(--accent-hover);
+}
+
+/* ============================================================
+ * 响应式：需求确认页（<768px 上下堆叠）
+ * ============================================================ */
+
+@media (max-width: 768px) {
+  .home-container {
+    padding: 24px 16px;
+  }
+
+  .home-logo {
+    width: 72px;
+    height: 72px;
+  }
+
+  .home-title {
+    font-size: 22px;
+  }
+
+  .home-input-area {
+    flex-direction: column;
+  }
+
+  .home-input-area #home-start-btn {
+    align-self: stretch;
+  }
+
+  .chat-layout {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .chat-area {
+    flex: 1 1 auto;
+    height: 400px;
+  }
+
+  .confirmation-card {
+    flex: 1 1 auto;
+  }
+}

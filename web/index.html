@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ChancePing 盯机会 - Watch Rules 编辑器</title>
+  <title>ChancePing 盯机会</title>
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
@@ -19,16 +19,114 @@
 
   <!-- Tab 导航 -->
   <nav class="tab-nav">
-    <button class="tab-btn active" data-tab="editor">编辑器</button>
-    <button class="tab-btn" data-tab="opportunities">机会库</button>
+    <button class="tab-btn active" data-tab="home">首页</button>
+    <button class="tab-btn" data-tab="chat">需求确认</button>
     <button class="tab-btn" data-tab="search">搜索</button>
+    <button class="tab-btn" data-tab="opportunities">机会库</button>
     <button class="tab-btn" data-tab="reports">报告</button>
+    <button class="tab-btn" data-tab="editor">编辑器</button>
   </nav>
 
   <!-- Tab 内容区 -->
   <main class="tab-content">
-    <!-- Tab 1: 编辑器 -->
-    <section class="tab-panel active" id="panel-editor">
+    <!-- Tab 1: 首页 -->
+    <section class="tab-panel active" id="panel-home">
+      <div class="home-container">
+        <div class="home-hero">
+          <img src="/assets/logo.png" alt="ChancePing 盯机会" class="home-logo" />
+          <h2 class="home-title">ChancePing 盯机会</h2>
+          <p class="home-subtitle">告诉 AI 你要盯什么，它在合适的时间把对的机会推送给你</p>
+        </div>
+        <div class="home-input-area">
+          <textarea id="home-input" placeholder="你想盯什么机会？&#10;例如：我要盯 AI 相关的比赛机会" rows="3"></textarea>
+          <button id="home-start-btn">开始</button>
+        </div>
+        <div class="home-examples">
+          <span class="examples-label">快捷示例：</span>
+          <button class="example-btn" data-text="我要盯 AI 相关的比赛机会" data-radar="ai_competition">AI 比赛</button>
+          <button class="example-btn" data-text="我要盯政策申报机会" data-radar="opc_policy">政策申报</button>
+          <button class="example-btn" data-text="我要盯文创非遗项目机会" data-radar="cultural_heritage">文创项目</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Tab 2: 需求确认 -->
+    <section class="tab-panel" id="panel-chat">
+      <div class="chat-layout">
+        <!-- 对话区（左侧） -->
+        <div class="chat-area">
+          <div class="chat-messages" id="chat-messages">
+            <p class="placeholder">在首页输入需求，或直接在下方输入开始对话</p>
+          </div>
+          <div class="chat-input-area">
+            <textarea id="chat-input" placeholder="输入你的回答..." rows="2"></textarea>
+            <button id="chat-send-btn">发送</button>
+          </div>
+        </div>
+        <!-- 确认卡（右侧） -->
+        <aside class="confirmation-card" id="confirmation-card">
+          <!-- 确认度总分 -->
+          <div class="confidence-section">
+            <div class="confidence-total">
+              <span class="confidence-number" id="conf-total">0</span>
+              <span class="confidence-unit">%</span>
+            </div>
+            <div class="confidence-bar">
+              <div class="confidence-bar-fill" id="conf-bar-fill"></div>
+            </div>
+            <div class="confidence-delta" id="conf-delta"></div>
+          </div>
+          <!-- 已确认 -->
+          <div class="confirmed-section">
+            <h4>已确认</h4>
+            <ul id="confirmed-list">
+              <li class="placeholder">暂无</li>
+            </ul>
+          </div>
+          <!-- 待确认 -->
+          <div class="uncertain-section">
+            <h4>待确认</h4>
+            <ul id="uncertain-list">
+              <li class="placeholder">暂无</li>
+            </ul>
+          </div>
+          <!-- 7 维度明细 -->
+          <div class="dimensions-section">
+            <h4>确认度明细</h4>
+            <div id="dimensions-list">
+              <p class="placeholder">开始对话后显示</p>
+            </div>
+          </div>
+          <!-- 开始搜索 -->
+          <button id="start-search-btn" class="primary-btn" disabled>开始搜索</button>
+        </aside>
+      </div>
+    </section>
+
+    <!-- Tab 3: 搜索 -->
+    <section class="tab-panel" id="panel-search">
+      <div class="placeholder-panel">
+        <p>搜索面板（Task 039 实现）</p>
+      </div>
+    </section>
+
+    <!-- Tab 4: 机会库 -->
+    <section class="tab-panel" id="panel-opportunities">
+      <div class="placeholder-panel">
+        <p>机会库面板（Task 040 实现）</p>
+        <div id="opportunities-list"></div>
+      </div>
+    </section>
+
+    <!-- Tab 5: 报告 -->
+    <section class="tab-panel" id="panel-reports">
+      <div class="placeholder-panel">
+        <p>报告面板（Task 040 实现）</p>
+      </div>
+    </section>
+
+    <!-- Tab 6: 编辑器 -->
+    <section class="tab-panel" id="panel-editor">
       <div class="editor-layout">
         <div class="editor-pane">
           <div class="editor-header">
@@ -91,33 +189,13 @@ $北京
         </div>
       </div>
     </section>
-
-    <!-- Tab 2: 机会库 -->
-    <section class="tab-panel" id="panel-opportunities">
-      <div class="placeholder-panel">
-        <p>机会库面板（V1.0 完善）</p>
-        <div id="opportunities-list"></div>
-      </div>
-    </section>
-
-    <!-- Tab 3: 搜索 -->
-    <section class="tab-panel" id="panel-search">
-      <div class="placeholder-panel">
-        <p>搜索面板（V1.0 完善）</p>
-      </div>
-    </section>
-
-    <!-- Tab 4: 报告 -->
-    <section class="tab-panel" id="panel-reports">
-      <div class="placeholder-panel">
-        <p>报告面板（V1.0 完善）</p>
-      </div>
-    </section>
   </main>
 
   <!-- Toast 提示 -->
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <script src="/home.js"></script>
+  <script src="/requirement-chat.js"></script>
   <script src="/watch-rules-editor.js"></script>
 </body>
 </html>
