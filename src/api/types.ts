@@ -153,3 +153,25 @@ export interface RadarRunResult {
   /** 搜索到的机会列表 */
   opportunities: ScoredOpportunity[];
 }
+
+// ============================================================
+// V1.5-05 新增：AI 生成器请求/响应类型
+// ============================================================
+
+/** AI 生成雷达请求 */
+export interface RadarGenerateRequest {
+  /** 用户自然语言描述 */
+  description: string;
+  /** 可选的上传文件解析文本 */
+  uploaded_text?: string;
+}
+
+/** AI 生成雷达响应数据 */
+export interface RadarGenerateResponseData {
+  /** 生成的 RadarSpec */
+  spec: RadarRequirementSpec;
+  /** AI 建议的雷达名称（≤20 字） */
+  suggestedName: string;
+  /** 字段完整率（0-100） */
+  completeness: number;
+}

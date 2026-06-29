@@ -20,11 +20,12 @@
 
 import { Hono } from "hono";
 import type { AppContext } from "../context";
-import type { ApiResponse, RadarCreateRequest, RadarUpdateRequest, RadarRunRequest, RadarRunResult } from "../types";
+import type { ApiResponse, RadarCreateRequest, RadarUpdateRequest, RadarRunRequest, RadarRunResult, RadarGenerateRequest, RadarGenerateResponseData } from "../types";
 import { SearchOrchestrator } from "../../search/orchestrator";
 import { getDataMode } from "../../demo/data-mode";
 import type { RadarType } from "../../agents/opportunity-store";
 import type { RadarKind, RadarStatus } from "../../schema/radar";
+import { RadarGenerator } from "../../agents/radar-generator";
 
 /** 从 RadarKind 推断 RadarType（custom 默认 ai_competition） */
 function kindToRadarType(kind: RadarKind): RadarType {
@@ -63,6 +64,38 @@ export function radarsRoutes(ctx: AppContext): Hono {
       providerRouting: body.providerRouting,
     });
     return c.json({ success: true, data: radar, error: null, duration_ms: Date.now() - start } satisfies ApiResponse);
+  });
+
+  // ============================================================
+  // POST /generate - AI 生成雷达 Spec（V1.5-05 新增）
+  // ============================================================
+  app.post("/generate", async (c) => {
+    const start = Date.now();
+    let body: RadarGenerateRequest;
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json(errorResponse("BAD_REQUEST", "请求体不是合法 JSON", Date.now() - start, 400), 400);
+    }
+    if (!body.description || !body.description.trim()) {
+      return c.json(errorResponse("BAD_REQUEST", "description 必填", Date.now() - start, 400), 400);
+    }
+
+    try {
+      const generator = new RadarGenerator(ctx.llmAdapter);
+      const result = await generator.generate(body.description, body.uploaded_text);
+      const data: RadarGenerateResponseData = {
+        spec: result.spec,
+        suggestedName: result.suggestedName,
+        completeness: result.completeness,
+      };
+      return c.json({ success: true, data, error: null, duration_ms: Date.now() - start } satisfies ApiResponse);
+    } catch (err) {
+      return c.json(
+        errorResponse("GENERATE_ERROR", err instanceof Error ? err.message : String(err), Date.now() - start, 500),
+        500,
+      );
+    }
   });
 
   // ============================================================

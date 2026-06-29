@@ -2669,3 +2669,115 @@ textarea {
     flex-wrap: wrap;
   }
 }
+
+/* ============================================================
+ * Task V1.5-05: AI 生成器样式
+ * ============================================================ */
+
+/* 工具栏按钮组 */
+.radars-toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+/* AI 生成对话框（宽版） */
+.create-modal-dialog-wide {
+  max-width: 560px;
+}
+
+.create-modal-dialog-wide textarea {
+  width: 100%;
+  padding: 8px 10px;
+  background-color: var(--bg-tertiary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: inherit;
+  min-height: 60px;
+}
+
+.create-modal-dialog-wide textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* AI 生成结果区 */
+.ai-generate-result {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ai-generate-result h4 {
+  font-size: 14px;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+}
+
+.ai-spec-preview {
+  background-color: var(--bg-tertiary);
+  padding: 12px;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-spec-preview .info-row {
+  display: flex;
+  align-items: flex-start;
+  font-size: 13px;
+}
+
+.ai-spec-preview .info-label {
+  width: 80px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.ai-spec-preview .info-value {
+  color: var(--text-primary);
+  word-break: break-word;
+}
+
+/* 完整率进度条 */
+.ai-completeness {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+}
+
+.ai-completeness .info-label {
+  width: 80px;
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+
+.completeness-bar {
+  flex: 1;
+  height: 8px;
+  background-color: var(--bg-tertiary);
+  border-radius: 4px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.completeness-fill {
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+.completeness-text {
+  font-weight: 600;
+  min-width: 40px;
+  text-align: right;
+}
+
+/* 确认/重新生成按钮组 */
+.ai-confirm-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}

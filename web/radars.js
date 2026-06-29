@@ -346,6 +346,197 @@
   }
 
   // ============================================================
+  // AI 生成雷达（V1.5-05 新增）
+  // ============================================================
+
+  /**
+   * 打开 AI 生成对话框。
+   * 用户输入自然语言描述，可选上传文件，点击生成后调 POST /api/radars/generate。
+   */
+  function openGenerateModal() {
+    const existing = document.getElementById("ai-generate-modal");
+    if (existing) existing.remove();
+
+    const modal = document.createElement("div");
+    modal.className = "create-modal";
+    modal.id = "ai-generate-modal";
+    modal.innerHTML = `
+      <div class="create-modal-backdrop"></div>
+      <div class="create-modal-dialog create-modal-dialog-wide">
+        <div class="create-modal-header">
+          <h3>✨ AI 生成雷达</h3>
+          <button class="create-modal-close" title="关闭">×</button>
+        </div>
+        <div class="create-modal-body">
+          <label class="create-field">
+            <span class="create-label">描述你想盯的机会 <span class="required">*</span></span>
+            <textarea id="ai-generate-description" rows="3" placeholder="例如：我要盯 RPA 相关的比赛" style="resize:vertical;"></textarea>
+          </label>
+          <label class="create-field">
+            <span class="create-label">上传文件文本（可选）</span>
+            <input type="text" id="ai-generate-uploaded" placeholder="粘贴文件解析后的文本" />
+          </label>
+        </div>
+        <div class="create-modal-footer">
+          <button class="btn-cancel" id="ai-generate-cancel">取消</button>
+          <button class="btn-primary" id="ai-generate-submit">生成</button>
+        </div>
+        <div id="ai-generate-result" style="display:none; padding: 0 20px 20px;"></div>
+      </div>
+    `;
+    document.body.appendChild(modal);
+
+    const close = () => modal.remove();
+    modal.querySelector(".create-modal-close").addEventListener("click", close);
+    modal.querySelector(".create-modal-backdrop").addEventListener("click", close);
+    modal.querySelector("#ai-generate-cancel").addEventListener("click", close);
+
+    modal.querySelector("#ai-generate-submit").addEventListener("click", () => {
+      submitGenerate(modal);
+    });
+  }
+
+  /**
+   * 提交 AI 生成请求（POST /api/radars/generate）。
+   * @param {HTMLElement} modal - modal DOM
+   */
+  async function submitGenerate(modal) {
+    const descEl = modal.querySelector("#ai-generate-description");
+    const uploadedEl = modal.querySelector("#ai-generate-uploaded");
+    const description = (descEl.value || "").trim();
+    if (!description) {
+      if (window.showToast) showToast("请输入机会描述", "warning");
+      descEl.focus();
+      return;
+    }
+    const uploadedText = (uploadedEl.value || "").trim() || undefined;
+
+    const submitBtn = modal.querySelector("#ai-generate-submit");
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.textContent = "生成中...";
+    }
+    const resultDiv = modal.querySelector("#ai-generate-result");
+    if (resultDiv) {
+      resultDiv.style.display = "block";
+      resultDiv.innerHTML = '<p class="placeholder">AI 正在生成雷达规格...</p>';
+    }
+
+    try {
+      const res = await fetch("/api/radars/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ description, uploaded_text: uploadedText }),
+      });
+      const json = await res.json();
+      if (json.success && json.data) {
+        renderGenerateResult(modal, json.data, description);
+      } else {
+        const msg = json.error?.message || "生成失败";
+        if (resultDiv) resultDiv.innerHTML = `<p class="placeholder">生成失败：${escapeHtml(msg)}</p>`;
+        if (window.showToast) showToast(`生成失败：${msg}`, "error");
+      }
+    } catch (err) {
+      if (resultDiv) resultDiv.innerHTML = '<p class="placeholder">生成失败：网络错误</p>';
+      if (window.showToast) showToast("生成失败：网络错误", "error");
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "生成";
+      }
+    }
+  }
+
+  /**
+   * 渲染 AI 生成结果（建议名称 + Spec 预览 + 完整率 + 确认创建按钮）。
+   * @param {HTMLElement} modal - modal DOM
+   * @param {Object} data - RadarGenerateResponseData
+   * @param {string} originalDescription - 原始描述
+   */
+  function renderGenerateResult(modal, data, originalDescription) {
+    const resultDiv = modal.querySelector("#ai-generate-result");
+    if (!resultDiv) return;
+
+    const spec = data.spec || {};
+    const keywords = (spec.keyword_strategy && spec.keyword_strategy.core_keywords_zh) || [];
+    const regions = (spec.region_scope && spec.region_scope.primary_regions) || [];
+    const exclusions = (spec.filter_rules && spec.filter_rules.must_exclude) || [];
+    const completeness = typeof data.completeness === "number" ? data.completeness : 0;
+    const completenessColor = completeness >= 90 ? "var(--success)" : "var(--warning)";
+    const suggestedName = data.suggestedName || "我的自定义雷达";
+
+    resultDiv.innerHTML = `
+      <div class="ai-generate-result">
+        <h4>生成结果</h4>
+        <label class="create-field">
+          <span class="create-label">雷达名称（可编辑）</span>
+          <input type="text" id="ai-result-name" value="${escapeAttr(suggestedName)}" maxlength="20" />
+        </label>
+        <div class="ai-spec-preview">
+          <div class="info-row"><span class="info-label">关键词</span><span class="info-value">${keywords.length > 0 ? escapeHtml(keywords.join(", ")) : "—"}</span></div>
+          <div class="info-row"><span class="info-label">地域</span><span class="info-value">${regions.length > 0 ? escapeHtml(regions.join(", ")) : "—"}</span></div>
+          <div class="info-row"><span class="info-label">排除规则</span><span class="info-value">${exclusions.length > 0 ? escapeHtml(exclusions.join(", ")) : "—"}</span></div>
+        </div>
+        <div class="ai-completeness">
+          <span class="info-label">字段完整率</span>
+          <div class="completeness-bar">
+            <div class="completeness-fill" style="width:${completeness}%; background-color:${completenessColor};"></div>
+          </div>
+          <span class="completeness-text" style="color:${completenessColor};">${completeness}%</span>
+        </div>
+        <div class="ai-confirm-actions">
+          <button class="btn-primary" id="ai-confirm-create" ${completeness < 90 ? "disabled" : ""} title="${completeness < 90 ? "完整率 < 90%，不允许创建" : ""}">确认创建</button>
+          <button class="btn-cancel" id="ai-regenerate">重新生成</button>
+        </div>
+      </div>
+    `;
+
+    // 确认创建
+    const confirmBtn = resultDiv.querySelector("#ai-confirm-create");
+    if (confirmBtn) {
+      confirmBtn.addEventListener("click", async () => {
+        if (confirmBtn.disabled) return;
+        const nameInput = resultDiv.querySelector("#ai-result-name");
+        const name = (nameInput.value || "").trim() || suggestedName;
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = "创建中...";
+
+        try {
+          const res = await fetch("/api/radars", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, kind: "custom", spec }),
+          });
+          const json = await res.json();
+          if (json.success) {
+            modal.remove();
+            if (window.showToast) showToast("雷达创建成功", "success");
+            loadRadarList();
+          } else {
+            const msg = json.error?.message || "创建失败";
+            if (window.showToast) showToast(`创建失败：${msg}`, "error");
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = "确认创建";
+          }
+        } catch (err) {
+          if (window.showToast) showToast("创建失败：网络错误", "error");
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = "确认创建";
+        }
+      });
+    }
+
+    // 重新生成
+    const regenBtn = resultDiv.querySelector("#ai-regenerate");
+    if (regenBtn) {
+      regenBtn.addEventListener("click", () => {
+        resultDiv.innerHTML = "";
+        submitGenerate(modal);
+      });
+    }
+  }
+
+  // ============================================================
   // 事件绑定与初始化
   // ============================================================
 
@@ -361,6 +552,9 @@
     const createBtn = document.getElementById("btn-create-radar");
     if (createBtn) createBtn.addEventListener("click", openCreateModal);
 
+    const aiBtn = document.getElementById("btn-ai-generate");
+    if (aiBtn) aiBtn.addEventListener("click", openGenerateModal);
+
     const refreshBtn = document.getElementById("btn-refresh-radars");
     if (refreshBtn) refreshBtn.addEventListener("click", loadRadarList);
   });
@@ -372,4 +566,7 @@
   window.submitCreate = submitCreate;
   window.goToDetail = goToDetail;
   window.backToList = backToList;
+  window.openGenerateModal = openGenerateModal;
+  window.submitGenerate = submitGenerate;
+  window.renderGenerateResult = renderGenerateResult;
 })();
