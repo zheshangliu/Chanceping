@@ -34,7 +34,7 @@ export function chatRoutes(ctx: AppContext): Hono {
         conversationId = body.conversation_id!;
       } else {
         conversationId = body.conversation_id ?? `conv_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-        const manager = new ConversationManager(ctx.modelRouter, radarType, conversationId);
+        const manager = new ConversationManager(ctx.llmAdapter, radarType, conversationId);
         convEntry = { manager, radar_type: radarType };
         ctx.conversations.set(conversationId, convEntry);
       }

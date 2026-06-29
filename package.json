@@ -23,6 +23,7 @@
     "verify:export": "tsx scripts/verify-task031.ts",
     "verify:task034": "tsx scripts/verify-task034.ts",
     "verify:task036": "tsx scripts/verify-task036.ts",
+    "verify:e2e-ai-events": "tsx scripts/verify-e2e-ai-events.ts",
     "precheck": "tsx scripts/precheck.ts"
   },
   "dependencies": {

@@ -382,11 +382,14 @@ function checkTask034Regression(): void {
   const result = runCommand("npx", ["tsx", "scripts/verify-task034.ts"]);
   const output = result.stdout + result.stderr;
 
-  // 解析 PASS / FAIL 计数
-  const passMatch = output.match(/(\d+)\s*PASS/i) || output.match(/PASS[:\s]+(\d+)/i);
-  const failMatch = output.match(/(\d+)\s*FAIL/i) || output.match(/FAIL[:\s]+(\d+)/i);
-  const passNum = passMatch ? parseInt(passMatch[1], 10) : 0;
-  const failNum = failMatch ? parseInt(failMatch[1], 10) : -1;
+  // 解析 PASS / FAIL 计数（匹配最后的汇总行：验收结果：100 PASS / 0 FAIL）
+  const allPassMatches = output.matchAll(/(\d+)\s*PASS/gi);
+  const allFailMatches = output.matchAll(/(\d+)\s*FAIL/gi);
+  const passMatches = [...allPassMatches];
+  const failMatches = [...allFailMatches];
+  // 取最后一个匹配（汇总行在输出末尾）
+  const passNum = passMatches.length > 0 ? parseInt(passMatches[passMatches.length - 1][1], 10) : 0;
+  const failNum = failMatches.length > 0 ? parseInt(failMatches[failMatches.length - 1][1], 10) : -1;
 
   assert(result.status === 0, `T17: verify-task034 exit 0（实际 exit ${result.status}）`);
   assert(passNum >= 100, `T17: verify-task034 PASS >= 100（实际 ${passNum}）`);

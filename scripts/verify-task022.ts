@@ -86,7 +86,7 @@ function createTestContext(): AppContext {
   const watchStore = new LocalWatchStore({ file_path: TEST_WATCH_PATH });
 
   return {
-    modelRouter,
+    llmAdapter: modelRouter,
     store,
     starManager,
     watchStore,

@@ -21,6 +21,7 @@ import type { RadarReportInput } from "../agents/radar-report-generator";
 import type { RadarRequirementSpec } from "../schema/radar-requirement-spec";
 import { notifyReminders } from "../notify/notify-sender";
 import type { NotifyChannel } from "../notify/channel-adapter";
+import { getDataMode } from "../demo/data-mode";
 
 /**
  * 执行触发器。
@@ -63,10 +64,11 @@ async function executeSearchTrigger(
 
   const spec = createSimpleSpec(radarType);
   const orchestrator = new SearchOrchestrator({
-    llmAdapter: ctx.modelRouter,
+    llmAdapter: ctx.llmAdapter,
     maxResultsPerProvider: maxResults,
     enableContentFetch: false, // 调度任务默认不抓正文，提升速度
     mockContent: true,
+    dataMode: getDataMode(),
   });
   const result = await orchestrator.search(spec);
 

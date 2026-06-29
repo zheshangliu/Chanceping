@@ -3,6 +3,7 @@ import type { AppContext } from "../context";
 import type { ApiResponse, SearchRequest } from "../types";
 import { SearchOrchestrator } from "../../search/orchestrator";
 import type { RadarRequirementSpec } from "../../schema/radar-requirement-spec";
+import { getDataMode } from "../../demo/data-mode";
 
 /** 默认 mock spec（当请求未提供 spec 时使用） */
 function createDefaultSpec(): RadarRequirementSpec {
@@ -80,11 +81,12 @@ export function searchRoutes(ctx: AppContext): Hono {
     try {
       const spec = (body.spec as RadarRequirementSpec) ?? createDefaultSpec();
       const orchestrator = new SearchOrchestrator({
-        llmAdapter: ctx.modelRouter,
+        llmAdapter: ctx.llmAdapter,
         maxResultsPerProvider: body.max_results,
         minRelevance: body.min_relevance,
         enableContentFetch: body.enable_content_fetch ?? true,
         mockContent: true,
+        dataMode: getDataMode(),
       });
       const result = await orchestrator.search(spec, body.query);
       return c.json({ success: true, data: result, error: null, duration_ms: Date.now() - start } satisfies ApiResponse);
