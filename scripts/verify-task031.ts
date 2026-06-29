@@ -390,7 +390,7 @@ async function checkApiRoutes(): Promise<void> {
   // F8: 报告列表 - GET /export/list 返回已导出文件列表
   const listRes = await app.request("/export/list", { method: "GET" });
   assert(listRes.status === 200, "F8: GET /export/list 返回 200");
-  const listBody = await listRes.json();
+  const listBody = await listRes.json() as any;
   assert(listBody.success === true, "F8: 列表返回 success=true");
   assert(listBody.data.files.length >= 2, "F8: 列表含至少 2 个文件（md + html）");
   assert(listBody.data.total === listBody.data.files.length, "F8: total 与 files 长度一致");

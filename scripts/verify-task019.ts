@@ -790,7 +790,7 @@ async function main(): Promise<void> {
     const versionParts = String(pkg.version ?? "").split(".").map((n: string) => parseInt(n, 10) || 0);
     const versionNum = versionParts.length >= 3 ? versionParts[0] * 10000 + versionParts[1] * 100 + versionParts[2] : (versionParts.length === 2 ? versionParts[0] * 10000 + versionParts[1] * 100 : 0);
     check("package.json: version >= 0.8.0", versionNum >= 800, `version=${pkg.version}`);
-    check("package.json: description 含 V0.8 或 V0.9", typeof pkg.description === "string" && (pkg.description.includes("V0.8") || pkg.description.includes("V0.9")));
+    check("package.json: description 含 V0.8/V0.9/V1.0 或 ChancePing", typeof pkg.description === "string" && (pkg.description.includes("V0.8") || pkg.description.includes("V0.9") || pkg.description.includes("V1.0") || pkg.description.includes("ChancePing")));
     check("package.json: scripts.verify 指向 verify-task019.ts",
       pkg.scripts?.verify === "tsx scripts/verify-task019.ts", `verify=${pkg.scripts?.verify}`);
 

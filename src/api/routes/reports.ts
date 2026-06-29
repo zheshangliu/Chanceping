@@ -156,7 +156,7 @@ export function reportRoutes(ctx: AppContext): Hono {
       // 返回文件
       c.header("Content-Disposition", `attachment; filename="${exported.filename}"`);
       c.header("Content-Type", exported.contentType);
-      return c.body(exported.content);
+      return c.body(exported.content as unknown as ArrayBuffer);
     } catch (err) {
       return c.json({ success: false, data: null, error: { code: "EXPORT_ERROR", message: err instanceof Error ? err.message : String(err) }, duration_ms: Date.now() - start } satisfies ApiResponse, 500);
     }
@@ -179,7 +179,7 @@ export function reportRoutes(ctx: AppContext): Hono {
 
       c.header("Content-Disposition", `attachment; filename="${exported.filename}"`);
       c.header("Content-Type", exported.contentType);
-      return c.body(exported.content);
+      return c.body(exported.content as unknown as ArrayBuffer);
     } catch (err) {
       return c.json({ success: false, data: null, error: { code: "EXPORT_ERROR", message: err instanceof Error ? err.message : String(err) }, duration_ms: Date.now() - start } satisfies ApiResponse, 500);
     }
@@ -213,7 +213,7 @@ export function reportRoutes(ctx: AppContext): Hono {
     const contentType = ext === ".pdf" ? "application/pdf" : ext === ".html" ? "text/html; charset=utf-8" : "text/markdown; charset=utf-8";
     c.header("Content-Disposition", `attachment; filename="${filename}"`);
     c.header("Content-Type", contentType);
-    return c.body(content);
+    return c.body(content as unknown as ArrayBuffer);
   });
 
   return app;

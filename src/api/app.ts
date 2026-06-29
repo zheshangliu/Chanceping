@@ -1,6 +1,8 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
+import { readFileSync } from "fs";
+import { resolve } from "path";
 import type { AppContext } from "./context";
 import { createAppContext } from "./context";
 import { chatRoutes } from "./routes/chat";
@@ -14,6 +16,16 @@ import { reviewRoutes } from "./routes/review";
 import { webUiRoutes } from "./routes/web-ui";
 import type { ApiResponse } from "./types";
 
+/** 从 package.json 读取版本号（启动时一次性读取，避免每次请求读文件） */
+const APP_VERSION: string = (() => {
+  try {
+    const pkg = JSON.parse(readFileSync(resolve(process.cwd(), "package.json"), "utf-8"));
+    return pkg.version ?? "unknown";
+  } catch {
+    return "unknown";
+  }
+})();
+
 export function createApp(context?: AppContext): Hono {
   const ctx = context ?? createAppContext();
   const app = new Hono();
@@ -26,7 +38,7 @@ export function createApp(context?: AppContext): Hono {
   app.get("/health", (c) => {
     return c.json({
       success: true,
-      data: { status: "ok", version: "0.8.0" },
+      data: { status: "ok", version: APP_VERSION },
       error: null,
       duration_ms: 0,
     } satisfies ApiResponse);

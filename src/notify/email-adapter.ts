@@ -12,6 +12,7 @@
 
 import { isGlobalMockMode } from "./channel-adapter";
 import type { ChannelAdapter, SendResult, SendOptions } from "./channel-adapter";
+import { BRAND } from "../brand/constants";
 
 export class EmailAdapter implements ChannelAdapter {
   readonly channel = "email" as const;
@@ -25,7 +26,7 @@ export class EmailAdapter implements ChannelAdapter {
 
   async send(messages: string[], options?: SendOptions): Promise<SendResult> {
     const sentAt = new Date().toISOString();
-    const subject = options?.subject ?? "盯一下 ChancePing 提醒";
+    const subject = options?.subject ?? `${BRAND.product_name} 提醒`;
     const to = options?.to ?? process.env?.EMAIL_TO ?? "";
 
     // 合并所有消息为一封邮件（HTML 格式）

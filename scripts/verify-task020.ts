@@ -333,13 +333,13 @@ async function main(): Promise<void> {
     check("COMMERCIAL_STRATEGY.defaultTask === 'requirement_understanding'",
       COMMERCIAL_STRATEGY.defaultTask === "requirement_understanding");
 
-    // batch_screening
-    check("COMMERCIAL_STRATEGY.batch_screening.primary.provider === 'glm'",
-      COMMERCIAL_STRATEGY.taskRouting.batch_screening.primary.provider === "glm");
-    check("COMMERCIAL_STRATEGY.batch_screening.primary.model === 'glm-4.7-flash'",
-      COMMERCIAL_STRATEGY.taskRouting.batch_screening.primary.model === "glm-4.7-flash");
-    check("COMMERCIAL_STRATEGY.batch_screening.fallback?.provider === 'deepseek'",
-      COMMERCIAL_STRATEGY.taskRouting.batch_screening.fallback?.provider === "deepseek");
+    // batch_screening（GLM 限流后调整：DeepSeek V4-Flash 为主力，GLM 为 fallback）
+    check("COMMERCIAL_STRATEGY.batch_screening.primary.provider === 'deepseek'",
+      COMMERCIAL_STRATEGY.taskRouting.batch_screening.primary.provider === "deepseek");
+    check("COMMERCIAL_STRATEGY.batch_screening.primary.model === 'deepseek-v4-flash'",
+      COMMERCIAL_STRATEGY.taskRouting.batch_screening.primary.model === "deepseek-v4-flash");
+    check("COMMERCIAL_STRATEGY.batch_screening.fallback?.provider === 'glm'",
+      COMMERCIAL_STRATEGY.taskRouting.batch_screening.fallback?.provider === "glm");
 
     // core_judgment
     check("COMMERCIAL_STRATEGY.core_judgment.primary.model === 'deepseek-v4-pro'",

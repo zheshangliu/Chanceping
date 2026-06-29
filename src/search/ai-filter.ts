@@ -56,6 +56,8 @@ export interface AIFilterOptions {
   minRelevance?: number;
   /** main_text 截断字符数，默认 4000 */
   maxContentChars?: number;
+  /** Jina Reader 抓取模式：true=Mock内容（默认），false=真实抓取 */
+  mockContent?: boolean;
 }
 
 /** 默认相关度阈值 */
@@ -189,8 +191,8 @@ export async function aiFilter(
     return { passed, rejected };
   }
 
-  // 创建 Jina Reader 抓取器（默认 Mock 模式）
-  const fetcher = new JinaReaderFetcher({ mockMode: true });
+  // 创建 Jina Reader 抓取器（默认 Mock 模式，可通过 options.mockContent=false 切换真实抓取）
+  const fetcher = new JinaReaderFetcher({ mockMode: options?.mockContent ?? true });
 
   // 逐条处理（不并发，避免 Mock 模式状态问题）
   for (const result of results) {
@@ -209,20 +211,25 @@ export async function aiFilter(
       content = emptyContent(result.url, `内容抓取异常: ${errMsg}`);
     }
 
-    // 内容抓取失败 → relevance=0 + reason "内容抓取失败"
+    // 内容抓取失败 → 用 snippet 代替正文，仍调用 LLM 精筛（不直接拒绝）
+    let effectiveContent = content;
     if (!content.fetch_success) {
-      rejected.push({
-        result,
-        reason: `内容抓取失败${content.fetch_error ? `: ${content.fetch_error}` : ""}`,
-      });
-      continue;
+      // r.jina.ai 不可达时，用搜索结果的 snippet 作为 main_text 的替代
+      const snippetText = result.snippet ?? "";
+      effectiveContent = {
+        ...content,
+        main_text: snippetText,
+        word_count: snippetText.length,
+        fetch_success: true,  // 标记为有效内容，让后续 LLM 精筛能处理
+        fetch_error: content.fetch_error,  // 保留原始错误信息
+      };
     }
 
-    // 步骤 2-4：构造 LLM prompt 并调用
+    // 步骤 2-4：构造 LLM prompt 并调用（用 effectiveContent 代替 content）
     let relevance = 0;
     let reason = "";
     try {
-      const llmRequest = buildLLMRequest(result, content, spec, maxContentChars);
+      const llmRequest = buildLLMRequest(result, effectiveContent, spec, maxContentChars);
       const llmResponse = await llmAdapter.chat(llmRequest);
 
       // 步骤 4：使用 T4 parseJsonWithRepair 解析
@@ -244,7 +251,7 @@ export async function aiFilter(
 
     // 步骤 5：relevance >= minRelevance → passed
     if (relevance >= minRelevance) {
-      passed.push({ result, content, relevance, reason });
+      passed.push({ result, content: effectiveContent, relevance, reason });
     } else {
       rejected.push({ result, reason: `相关度 ${relevance} < ${minRelevance}: ${reason}` });
     }

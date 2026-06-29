@@ -32,16 +32,67 @@ export interface RuleFilterResult {
 }
 
 /**
- * 判断文本是否含关键词数组中的任一词。
+ * 竞赛类近义词表（用于模糊匹配，含繁体）
+ */
+const COMPETITION_SYNONYMS: Record<string, string[]> = {
+  "比赛": ["比赛", "竞赛", "大赛", "赛事", "挑战赛", "創作比賽", "競賽", "大賽", "賽事", "挑戰賽", "選拔"],
+  "竞赛": ["比赛", "竞赛", "大赛", "赛事", "挑战赛", "創作比賽", "競賽", "大賽", "賽事", "挑戰賽", "選拔"],
+  "大赛": ["比赛", "竞赛", "大赛", "赛事", "挑战赛", "創作比賽", "競賽", "大賽", "賽事", "挑戰賽", "選拔"],
+  "黑客松": ["黑客松", "hackathon", "黑客馬拉松"],
+  "补贴": ["补贴", "资助", "扶持", "补助", "貼"],
+  "申报": ["申报", "申请", "報名", "報"],
+  "ai": ["ai", "AI", "人工智能", "artificial intelligence", "智能"],
+};
+
+/**
+ * 将关键词拆分为核心词（去除空格/标点后的有意义词元）
+ */
+function tokenize(kw: string): string[] {
+  return kw
+    .split(/[\s,，、/]+/)
+    .map((s) => s.trim())
+    .filter((s) => s.length >= 2);
+}
+
+/**
+ * 检查 text 是否包含 word 或其近义词
+ */
+function matchWord(text: string, word: string): boolean {
+  if (text.includes(word)) return true;
+  const synonyms = COMPETITION_SYNONYMS[word];
+  if (synonyms) {
+    return synonyms.some((syn) => text.includes(syn));
+  }
+  return false;
+}
+
+/**
+ * 判断文本是否含关键词数组中的任一词（支持分词/模糊匹配）。
+ *
+ * 匹配策略（任一命中即返回 true）：
+ * 1. 精确匹配：text.includes(kw)
+ * 2. 分词匹配：将关键词拆分为词元，所有词元都命中（含近义词）
+ * 3. 单词关键词走近义词匹配
+ *
  * @param text 待检测文本
  * @param keywords 关键词数组
  * @returns true 表示命中任一关键词
  */
 function containsAny(text: string, keywords: string[]): boolean {
   if (!Array.isArray(keywords) || keywords.length === 0) return false;
+  const lowerText = text.toLowerCase();
   return keywords.some((kw) => {
     if (typeof kw !== "string" || kw === "") return false;
-    return text.includes(kw);
+    const lowerKw = kw.toLowerCase();
+    // 1. 精确匹配
+    if (lowerText.includes(lowerKw)) return true;
+    // 2. 分词匹配：拆分关键词为词元，所有词元都命中
+    const tokens = tokenize(lowerKw);
+    if (tokens.length >= 2) {
+      return tokens.every((token) => matchWord(lowerText, token));
+    }
+    // 3. 单词关键词走近义词匹配
+    return matchWord(lowerText, lowerKw);
   });
 }
 

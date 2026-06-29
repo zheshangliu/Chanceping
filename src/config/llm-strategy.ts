@@ -29,20 +29,24 @@ import type {
 /**
  * 商业版策略。
  *
- * 核心思路：能用免费的不用付费的，能用便宜的不用贵的。
- *   - GLM-4.7-Flash 完全免费且支持工具调用，批量初筛层零成本
+ * 核心思路：能用便宜的不用贵的，稳定性优先。
+ *   - DeepSeek V4-Flash 作为初筛/去重主力（稳定可靠），GLM-4.7-Flash 作为 fallback（免费但限流）
  *   - DeepSeek V4-Pro 性价比远高于 Qwen3.7-Max（便宜 5.7 倍）
  *   - Qwen3.7-Plus 仅用于报告生成和兜底，最小化 Qwen 用量
  *
- * 预估单次雷达成本约 $0.05-$0.10
+ * 注：GLM-4.7-Flash 免费但频繁 429 限流（2026-06-28），已从 primary 降为 fallback。
+ * GLM 恢复稳定后可改回 primary 以降低成本。
+ *
+ * 预估单次雷达成本约 $0.05-$0.10（GLM 稳定时更低，GLM 限流时略增）
  */
 export const COMMERCIAL_STRATEGY: ModelStrategy = {
   profile: "commercial",
   defaultTask: "requirement_understanding",
   taskRouting: {
     batch_screening: {
-      primary: { provider: "glm", model: "glm-4.7-flash" },
-      fallback: { provider: "deepseek", model: "deepseek-v4-flash" },
+      // GLM-4.7-Flash 频繁 429 限流，降为 fallback；DeepSeek V4-Flash 提升为主力
+      primary: { provider: "deepseek", model: "deepseek-v4-flash" },
+      fallback: { provider: "glm", model: "glm-4.7-flash" },
     },
     core_judgment: {
       primary: { provider: "deepseek", model: "deepseek-v4-pro" },
@@ -65,8 +69,9 @@ export const COMMERCIAL_STRATEGY: ModelStrategy = {
       fallback: { provider: "glm", model: "glm-4.7-flash" },
     },
     dedup_classification: {
-      primary: { provider: "glm", model: "glm-4.7-flash" },
-      fallback: { provider: "deepseek", model: "deepseek-v4-flash" },
+      // GLM-4.7-Flash 频繁 429 限流，降为 fallback；DeepSeek V4-Flash 提升为主力
+      primary: { provider: "deepseek", model: "deepseek-v4-flash" },
+      fallback: { provider: "glm", model: "glm-4.7-flash" },
     },
     fallback: {
       primary: { provider: "qwen", model: "qwen3.7-plus" },

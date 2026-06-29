@@ -51,6 +51,7 @@ export async function renderPdf(
   // 延迟加载 puppeteer（可选依赖）
   let puppeteer: any;
   try {
+    // @ts-ignore - puppeteer 是可选依赖，未安装时类型声明不存在
     puppeteer = await import("puppeteer");
   } catch {
     throw new Error("Puppeteer 未安装，无法导出 PDF（npm install puppeteer）");

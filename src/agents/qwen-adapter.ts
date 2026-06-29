@@ -153,7 +153,9 @@ export class QwenAdapter implements LLMAdapter {
     const envKey = typeof process !== "undefined" ? process.env?.DASHSCOPE_API_KEY ?? "" : "";
     this.apiKey = config?.apiKey ?? envKey;
     this.model = config?.model ?? DEFAULT_MODEL;
-    this.baseUrl = config?.baseUrl ?? DEFAULT_BASE_URL;
+    // baseUrl 优先级：显式 config > DASHSCOPE_BASE_URL 环境变量 > 默认值
+    const envBaseUrl = typeof process !== "undefined" ? process.env?.DASHSCOPE_BASE_URL ?? "" : "";
+    this.baseUrl = config?.baseUrl ?? (envBaseUrl || DEFAULT_BASE_URL);
     this.maxTokens = config?.maxTokens ?? DEFAULT_MAX_TOKENS;
     // 显式 mockMode 优先，否则无 apiKey 时自动 Mock
     this.mockMode = config?.mockMode ?? this.apiKey === "";

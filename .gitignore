@@ -3,10 +3,25 @@ node_modules/
 
 # Build output
 dist/
+build/
 
 # Runtime data
 data/
+data/scheduler.json
 *.log
+
+# Meilisearch（全文搜索运行时数据）
+meili-data/
+
+# Reports/exports（保留目录结构，忽略内容）
+reports/*
+!reports/.gitkeep
+reports/export/
+!reports/export/.gitkeep
+exports/*
+!exports/.gitkeep
+reports/.archive/*
+!reports/.archive/.gitkeep
 
 # OS files
 .DS_Store
@@ -22,15 +37,11 @@ Thumbs.db
 coverage/
 .nyc_output/
 
-# Environment
+# Environment（含真实 API Key，禁止提交）
 .env
 .env.local
 .env.*.local
+# 保留 .env.example / .env.example.commercial / .env.example.competition 作为模板
 
-# Reports/exports（保留目录结构，忽略内容）
-reports/*
-!reports/.gitkeep
-exports/*
-!exports/.gitkeep
-reports/.archive/*
-!reports/.archive/.gitkeep
+# TRAE IDE 元数据
+.trae/

@@ -272,19 +272,24 @@ export class GlmAdapter implements LLMAdapter {
         }
 
         const data = (await response.json()) as {
-          choices?: Array<{ message?: { content?: string } }>;
+          choices?: Array<{ message?: { content?: string; reasoning_content?: string } }>;
         };
-        const content = data?.choices?.[0]?.message?.content ?? "";
-        if (content === "") {
-          throw new Error("GLM API returned empty content");
+        // GLM-4.7-Flash 是混合思考模型：content 可能为空，reasoning_content 占满 tokens
+        // 优先取 content，为空时回退到 reasoning_content，避免误报失败
+        const message = data?.choices?.[0]?.message;
+        const content = message?.content ?? "";
+        const reasoning = message?.reasoning_content ?? "";
+        const finalContent = content || reasoning;
+        if (finalContent === "") {
+          throw new Error("GLM API returned empty content (both content and reasoning_content are empty)");
         }
 
         // response_format="json" 时使用 T4 parseJsonWithRepair 解析
         if (request.response_format === "json") {
-          const parsed = parseJsonWithRepair(content);
-          return { content, parsed };
+          const parsed = parseJsonWithRepair(finalContent);
+          return { content: finalContent, parsed };
         }
-        return { content };
+        return { content: finalContent };
       } catch (err) {
         lastError = err instanceof Error ? err : new Error(String(err));
         // 网络错误才重试，HTTP 4xx/5xx 错误不重试

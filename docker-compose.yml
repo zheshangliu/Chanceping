@@ -1,0 +1,55 @@
+# ChancePing Docker Compose - 容器编排（可选附件）
+# 参赛版无需 Docker，使用 npm run quick-start 即可。
+#
+# 用法：
+#   docker-compose up -d          # 后台启动
+#   docker-compose logs -f        # 查看日志
+#   docker-compose down           # 停止
+#
+# 浏览器打开 http://localhost:3000
+
+version: "3.8"
+
+services:
+  chanceping:
+    build: .
+    image: chanceping:latest
+    container_name: chanceping
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - LLM_STRATEGY=competition
+      - STORE_TYPE=local
+      - SCHEDULER_ENABLED=false
+      - NOTIFY_MOCK_MODE=true
+      - PDF_EXPORT_ENABLED=false
+      # 如需使用真实 API Key，取消注释并填入：
+      # - DASHSCOPE_API_KEY=sk-xxx
+      # - SERPER_API_KEY=xxx
+      # - JINA_READER_API_KEY=xxx
+    volumes:
+      - ./data:/app/data
+      - ./reports:/app/reports
+      - ./exports:/app/exports
+      # 如需覆盖 .env，挂载自定义配置：
+      # - ./.env:/app/.env:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/health').then(r=>r.ok?process.exit(0):process.exit(1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  # 可选：Meilisearch 全文搜索（如需启用，将 STORE_TYPE 改为 meili）
+  # meilisearch:
+  #   image: getmeili/meilisearch:v1.6
+  #   container_name: chanceping-meili
+  #   ports:
+  #     - "7700:7700"
+  #   environment:
+  #     - MEILI_MASTER_KEY=chanceping-dev-key
+  #   volumes:
+  #     - ./meili-data:/meili_data
+  #   restart: unless-stopped

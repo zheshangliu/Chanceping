@@ -110,8 +110,11 @@ function fmtStatus(status: OpportunityCardStatus): string {
   const map: Record<OpportunityCardStatus, string> = {
     new: "新发现",
     viewed: "已查看",
+    tracking: "跟踪中",
     saved: "已保存",
     applied: "已报名",
+    missed: "已错过",
+    expired: "已过期",
     archived: "已归档",
     dismissed: "已忽略",
   };
