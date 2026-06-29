@@ -679,6 +679,28 @@ textarea {
   background-color: var(--accent-hover);
 }
 
+/* V1.3 新增：附件按钮 */
+.attach-btn {
+  align-self: flex-end;
+  padding: 8px 12px;
+  background-color: var(--bg-tertiary);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  transition: background-color 0.2s, border-color 0.2s;
+}
+
+.attach-btn:hover {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+
+.attach-btn:active {
+  transform: scale(0.95);
+}
+
 .home-examples {
   display: flex;
   flex-wrap: wrap;

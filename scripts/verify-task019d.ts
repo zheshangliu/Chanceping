@@ -482,11 +482,11 @@ async function main(): Promise<void> {
     // visible_level 分级正确
     const total = cs?.total ?? 0;
     let expectedLevel: string;
-    if (total >= 85) expectedLevel = "S";
-    else if (total >= 70) expectedLevel = "A";
-    else if (total >= 55) expectedLevel = "B";
-    else if (total >= 40) expectedLevel = "C";
-    else expectedLevel = "hidden";
+    if (total >= 90) expectedLevel = "S";
+    else if (total >= 80) expectedLevel = "A";
+    else if (total >= 65) expectedLevel = "B";
+    else if (total >= 50) expectedLevel = "C";
+    else expectedLevel = "D";
     check(`visible_level 分级正确（total=${total} → ${expectedLevel}）`, opp?.visible_level === expectedLevel, `actual=${opp?.visible_level}`);
 
     // guid = normalizeUrl(url)

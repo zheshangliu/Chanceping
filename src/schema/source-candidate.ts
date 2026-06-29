@@ -1,7 +1,7 @@
 /**
  * SourceCandidate —— 来源候选实体
  *
- * V1.3 新增。实现 Perplexity 级别的来源透明能力。
+ * V1.3 新增。实现 V1.3 轻量来源透明基础。
  * 与 EvidenceItem 配合，实现字段级证据追溯。
  *
  * 安全红线：

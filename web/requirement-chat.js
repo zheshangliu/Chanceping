@@ -347,10 +347,6 @@
       dimsList.innerHTML = renderDimensions(data.confidence);
     }
 
-    // V1.3 新增：附件按钮绑定
-    bindAttachButton("chat-attach-btn", input);
-    bindAttachButton("home-attach-btn", document.getElementById("home-input"));
-
     // 开始搜索按钮
     const searchBtn = document.getElementById("start-search-btn");
     if (searchBtn) {
@@ -417,6 +413,88 @@
   }
 
   // ============================================================
+  // V1.3 新增：文件上传
+  // ============================================================
+
+  // 支持的 MIME 类型（与后端 SUPPORTED_MIME_TYPES 对齐）
+  const SUPPORTED_MIME = {
+    "application/pdf": true,
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": true,
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": true,
+    "image/png": true,
+    "image/jpeg": true,
+    "image/gif": true,
+    "image/webp": true,
+  };
+  const MAX_FILE_SIZE_MB = 20;
+
+  async function uploadFile(file) {
+    const formData = new FormData();
+    formData.append("file", file);
+    if (conversationId) formData.append("conversation_id", conversationId);
+
+    const res = await fetch("/api/upload", {
+      method: "POST",
+      body: formData,
+    });
+    const json = await res.json();
+    if (json.success) {
+      return json.data;
+    } else {
+      throw new Error(json.error?.message || "上传失败");
+    }
+  }
+
+  function bindAttachButton(btnId, inputEl) {
+    const btn = document.getElementById(btnId);
+    if (!btn || !inputEl) return;
+
+    btn.addEventListener("click", () => {
+      const fileInput = document.createElement("input");
+      fileInput.type = "file";
+      fileInput.accept = ".pdf,.docx,.xlsx,.png,.jpg,.jpeg,.gif,.webp";
+      fileInput.style.display = "none";
+      fileInput.addEventListener("change", async () => {
+        const file = fileInput.files?.[0];
+        if (!file) return;
+
+        // V1.3 修复：前端文件大小预检查
+        const sizeMB = file.size / 1024 / 1024;
+        if (sizeMB > MAX_FILE_SIZE_MB) {
+          showToast(`文件超过 ${MAX_FILE_SIZE_MB}MB 限制（当前 ${sizeMB.toFixed(1)}MB）`, "error");
+          fileInput.remove();
+          return;
+        }
+
+        // V1.3 修复：前端 MIME 类型预检查
+        if (!SUPPORTED_MIME[file.type]) {
+          showToast(`不支持的文件类型: ${file.type || "未知"}`, "error");
+          fileInput.remove();
+          return;
+        }
+
+        showToast("正在解析文件...", "info");
+        try {
+          const result = await uploadFile(file);
+          const uploadedText = result.text || "";
+          const currentText = inputEl.value.trim();
+          if (currentText) {
+            inputEl.value = currentText + "\n\n[上传文件内容]\n" + uploadedText;
+          } else {
+            inputEl.value = "[上传文件内容]\n" + uploadedText;
+          }
+          showToast(`文件解析成功：${result.fileName}`, "success");
+        } catch (err) {
+          showToast(err.message, "error");
+        }
+        fileInput.remove();
+      });
+      document.body.appendChild(fileInput);
+      fileInput.click();
+    });
+  }
+
+  // ============================================================
   // 输入区事件绑定
   // ============================================================
 
@@ -441,6 +519,10 @@
         }
       });
     }
+
+    // V1.3 新增：附件按钮绑定
+    bindAttachButton("chat-attach-btn", input);
+    bindAttachButton("home-attach-btn", document.getElementById("home-input"));
 
     // 开始搜索按钮
     const searchBtn = document.getElementById("start-search-btn");

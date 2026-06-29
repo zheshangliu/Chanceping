@@ -14,8 +14,8 @@
 /** 搜索结果来源类型 */
 export type SearchSourceType = "web" | "rss" | "social" | "gov";
 
-/** 可见等级（与 OpportunityCard.visible_level 对齐） */
-export type SearchVisibleLevel = "S" | "A" | "B" | "C" | "hidden";
+/** 可见等级（与 OpportunityCard.visible_level 对齐；V1.3 新增 D 级） */
+export type SearchVisibleLevel = "S" | "A" | "B" | "C" | "D" | "hidden";
 
 /**
  * 搜索结果（第一层 API 返回的原始结果）。

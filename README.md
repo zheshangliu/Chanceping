@@ -10,7 +10,7 @@ AI 机会情报系统 —— 告诉 AI 你要盯什么，ChancePing 帮你找到
 
 ![License](https://img.shields.io/badge/license-AGPL%20v3-blue)
 ![Node.js](https://img.shields.io/badge/node.js-22%2B-green)
-![Version](https://img.shields.io/badge/version-1.0.0-orange)
+![Version](https://img.shields.io/badge/version-1.3.0-orange)
 ![TypeScript](https://img.shields.io/badge/typescript-5.5-blue)
 
 ---
@@ -32,9 +32,9 @@ AI 机会情报系统 —— 告诉 AI 你要盯什么，ChancePing 帮你找到
 
 ## 核心功能
 
-### 1. 互动式需求确认
+### 1. 互动式需求确认（一次一问）
 
-不直接生成报告，先与用户多轮对话确认需求（基于 JTBD + OST 框架），确保情报方向准确。
+不直接生成报告，先与用户多轮对话确认需求。V1.3 升级为**一次一问**模式：每轮只问 1 个问题，顺着用户回答追问，6 轮内达到 90% 确认度才生成需求确认卡。
 
 ### 2. 五层情报框架
 
@@ -75,16 +75,31 @@ ChanceScore = FitScore + IntentScore + EvidenceScore + UrgencyScore - EffortCost
 
 | 雷达类型 | 默认 Provider | 备选 |
 |---|---|---|
-| AI 赛事 | Serper | Bocha |
-| OPC 政策 | Bocha | Serper |
-| 文创非遗 | Exa | Bocha |
+| AI 赛事 | Serper | Exa（语义搜索） |
+| OPC 政策 | Bocha | Google CSE（限定 gov.cn） |
+| 文创非遗 | Bocha | Serper |
 
-### 6. Web UI 编辑器
+### 6. 来源透明（V1.3 新增）
 
-- 暗色主题 + 语法高亮
-- Watch Rules DSL 实时预览
-- 快捷键支持
-- 机会库浏览与 Star 收藏
+每个机会卡片附带来源信息：
+- **来源分类**：官方 / 资讯 / 社交 / 政府 / 学术等 9 类
+- **可信度分级**：A1(最高) ~ E5(最低)，对接 Admiralty Code
+- **证据提取**：从来源页面提取截止日期 / 奖金 / 主办方等 8 字段
+- **来源徽章**：前台显示"官方""权威""社区"等标签
+
+### 7. 文件上传解析（V1.3 新增）
+
+支持上传文件作为需求描述的补充：
+- **PDF**（pdf-parse）/ **Word**（mammoth）/ **Excel**（exceljs）/ **图片**（Qwen-VL-Max）
+- 解析后文本注入对话，参与需求确认
+- 单文件上限 20MB
+
+### 8. D 级机会处理（V1.3 新增）
+
+机会评分统一为 90/80/65/50 阈值：
+- S(90+) / A(80+) / B(65+) / C(50+) / D(<50)
+- D 级机会进入报告"不建议投入"章节
+- 无官方来源的 S 级机会自动降级为 A 级
 
 ---
 
@@ -139,14 +154,15 @@ docker-compose up -d
 npm run quick-start
 
 # 2. 浏览器打开 http://localhost:3000
-# 3. 演示步骤：
-#    a. 编辑 Watch Rules（DSL 编辑器 + 语法高亮）
-#    b. 测试规则（输入 Mock 数据 + 运行测试）
-#    c. 手动触发搜索（POST /api/search）
-#    d. 查看机会库（GET /api/opportunities）
-#    e. 生成报告（POST /api/reports/generate）
-#    f. 导出报告（POST /api/reports/export?format=html）
-#    g. 机会复盘（GET /api/review）
+# 3. 演示步骤（V1.3 五轨道能力）：
+#    a. 首页输入需求 + 上传文件补充（📎 按钮）
+#    b. 一次一问需求确认（6 轮内达 90% 确认度）
+#    c. 查看需求确认卡 → 开始搜索
+#    d. 搜索结果含来源徽章 + 证据提取 + S/A/B/C/D 分级
+#    e. 收藏机会 → 查看机会库
+#    f. 生成报告（含来源索引第 8.5 章 + D 级排除章节）
+#    g. 导出报告（HTML/Markdown）
+#    h. 机会复盘统计
 ```
 
 ---
@@ -197,7 +213,7 @@ cp .env.example .env    # Windows: copy .env.example .env
 │  暗色主题 + DSL 编辑器 + 机会库浏览器                  │
 ├─────────────────────────────────────────────────────┤
 │  API 层 (src/api/)                                   │
-│  Hono REST API + 8 组路由 + 健康检查                  │
+│  Hono REST API + 9 组路由 + 健康检查                  │
 ├─────────────────────────────────────────────────────┤
 │  Agent 层 (src/agents/)                              │
 │  对话管理 + 雷达方案/报告生成 + 机会状态机 + 复盘      │
@@ -228,7 +244,7 @@ chanceping/
 ├── src/
 │   ├── agents/          # Agent 层（对话、雷达、机会、复盘）
 │   ├── api/             # REST API（Hono）
-│   │   ├── routes/      # 8 组路由
+│   │   ├── routes/      # 9 组路由
 │   │   ├── app.ts       # 应用入口
 │   │   └── server.ts    # 服务器启动
 │   ├── brand/           # 品牌常量
@@ -264,11 +280,11 @@ chanceping/
 GET /health
 ```
 
-### 8 组路由
+### 9 组路由
 
 | 路由 | 方法 | 用途 |
 |---|---|---|
-| `/api/chat` | POST | 多轮对话需求确认 |
+| `/api/chat` | POST | 多轮对话需求确认（一次一问） |
 | `/api/opportunities` | GET / POST | 机会库管理 + Star 收藏 |
 | `/api/search` | POST | 手动触发搜索 |
 | `/api/reminders` | GET / POST | 截止提醒管理 |
@@ -276,6 +292,7 @@ GET /health
 | `/api/reports` | POST | 报告生成 + 导出（md/html/pdf） |
 | `/api/scheduler` | GET / POST | 调度器管理 |
 | `/api/review` | GET | 机会复盘统计 |
+| `/api/upload` | POST | 文件上传解析（PDF/Word/Excel/图片） |
 
 ### 示例
 
@@ -356,29 +373,33 @@ npm run verify:task034         # 本任务（开源就绪）验收
 
 ## 路线图
 
-### V1.0（当前版本 - 参赛版）
+### V1.3（当前版本 - 数据层）
 
-- ✅ 五层情报框架
-- ✅ Watch Rules DSL
-- ✅ 多 Provider 雷达路由
-- ✅ Web UI 编辑器
-- ✅ 报告导出（Markdown/HTML/PDF）
-- ✅ 机会复盘
-- ✅ 一键启动 + Mock 模式
+- ✅ RadarSpec v2 类型系统（8 个 schema 模块）
+- ✅ 一次一问需求确认（6 轮上限 + 90% 确认度阈值）
+- ✅ 来源透明（SourceClassifier + EvidenceExtractor + OpportunityCardMapper）
+- ✅ 报告增强（来源索引 + D 级处理 + P0 阈值统一）
+- ✅ 文件上传解析（PDF/Word/Excel/图片）
 
-### V1.5（规划中）
+### V1.4（参赛冲刺）
 
-- GitHub Actions CI/CD
-- NPM 包发布
-- Web UI 报告在线预览
-- 更多搜索 Provider（Bing / 百度）
+- 演示脚本优化 + Bug 修复
+- 参赛文档 + 录屏
 
-### V2.0（远期）
+### V1.5（自定义雷达核心能力）
 
-- 多用户支持 + 权限管理
-- 报告模板自定义编辑器
-- 移动端适配
-- 国际化完善（en-US 全量翻译）
+- 雷达注册表 + 生成器 + CRUD + 状态机
+- 雷达列表页 + 手动运行 + 定时运行
+
+### V2.0（分享与反馈）
+
+- 雷达分享 + 公开脱敏 + 反馈调优
+- 微信推送端到端 + 开源就绪
+
+### V3.0（SaaS 生态）
+
+- 多雷达并行 + 团队协作 + 雷达市场
+- 登录 + 支付 + 多租户
 
 完整路线图见 [ROADMAP.md](./ROADMAP.md)。
 

@@ -12,12 +12,12 @@
  *
  * total = Fit*0.30 + Intent*0.20 + Evidence*0.20 + Urgency*0.15 + EffortCost*0.15
  *
- * 分级（任务书 4.3 节专用阈值，不复用 scoring-rules.ts 的 90/80/65/50）：
- *   total ≥ 85 → "S"
- *   70 ≤ total < 85 → "A"
- *   55 ≤ total < 70 → "B"
- *   40 ≤ total < 55 → "C"
- *   total < 40 → "hidden"
+ * 分级（V1.3 统一阈值，复用 scoring-rules.ts 的 scoreToLevel）：
+ *   total ≥ 90 → "S"
+ *   80 ≤ total < 90 → "A"
+ *   65 ≤ total < 80 → "B"
+ *   50 ≤ total < 65 → "C"
+ *   total < 50 → "D"
  *
  * Mock 模式（QwenAdapter Mock 模式下，parsed 不含 fit/intent/effort_cost 字段时）：
  *   - fit=75, intent=70, effort_cost=50（根据 title 关键词微调）
@@ -31,6 +31,7 @@ import type { ReliabilityGrade } from "./provider-registry";
 import { providerRegistry } from "./provider-registry";
 import { parseJsonWithRepair } from "../utils/json-repair";
 import { normalizeUrl } from "../utils/url-normalizer";
+import { scoreToLevel } from "../schema/scoring-rules";
 
 /** 评分权重（固定，不得调整） */
 const WEIGHT_FIT = 0.30;
@@ -168,18 +169,6 @@ function computeUrgency(dateStr?: string): number {
 }
 
 /**
- * 根据 total 计算 visible_level。
- * 任务书 4.3 节专用阈值（85/70/55/40），不复用 scoring-rules.ts 的 90/80/65/50。
- */
-function computeVisibleLevel(total: number): SearchVisibleLevel {
-  if (total >= 85) return "S";
-  if (total >= 70) return "A";
-  if (total >= 55) return "B";
-  if (total >= 40) return "C";
-  return "hidden";
-}
-
-/**
  * 构造 LLM 评分 prompt。
  * system 消息：spec + 五维评分规则
  * user 消息：title + main_text + relevance
@@ -289,8 +278,8 @@ export async function scoreOpportunities(
         llmResult.effort_cost * WEIGHT_EFFORT_COST,
     );
 
-    // 分级
-    const visibleLevel = computeVisibleLevel(total);
+    // 分级（V1.3 统一：复用 scoring-rules.ts 的 scoreToLevel）
+    const visibleLevel = scoreToLevel(total) as SearchVisibleLevel;
 
     // guid：从 search_result.raw_data 提取，或用 normalizeUrl(url) 作为伪 guid
     let guid: string | undefined;

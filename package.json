@@ -35,6 +35,12 @@
     "verify:e2e-three-radars": "tsx scripts/verify-e2e-three-radars.ts",
     "verify:taskB": "tsx scripts/verify-taskB.ts",
     "verify:taskC": "tsx scripts/verify-taskC.ts",
+    "verify:task044": "tsx scripts/verify-task044.ts",
+    "verify:task045": "tsx scripts/verify-task045.ts",
+    "verify:task046": "tsx scripts/verify-task046.ts",
+    "verify:task047": "tsx scripts/verify-task047.ts",
+    "verify:taskD": "tsx scripts/verify-task047.ts",
+    "verify:taskE": "tsx scripts/verify-taskE.ts",
     "precheck": "tsx scripts/precheck.ts"
   },
   "dependencies": {
