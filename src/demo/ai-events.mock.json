@@ -1,0 +1,76 @@
+{
+  "radar_type": "ai_competition",
+  "mode": "mock",
+  "opportunities": [
+    {
+      "title": "2026 全球 AI 创新大赛",
+      "url": "https://competition.example.com/ai-innovation-2026",
+      "snippet": "奖金 10 万元，截止 2026-08-15，面向全国 AI 开发者，官方主办",
+      "source_provider": "mock",
+      "page_content": "2026 全球 AI 创新大赛由 XX 主办，面向全国 AI 开发者。比赛分初赛/复赛/决赛三个阶段。初赛截止 2026-08-15。奖金设置：一等奖 10 万元，二等奖 5 万元，三等奖 2 万元。报名入口：https://competition.example.com/register",
+      "deadline": "2026-08-15",
+      "deadline_status": "confirmed",
+      "deadline_source_url": "https://competition.example.com/ai-innovation-2026",
+      "reward": "10 万元",
+      "organizer": "XX 官方",
+      "eligibility": "全国 AI 开发者",
+      "expected_level": "S"
+    },
+    {
+      "title": "2026 全国大学生 AI 挑战杯",
+      "url": "https://challenge.example.com/ai-cup-2026",
+      "snippet": "奖金 5 万元，截止 2026-07-30，面向在校大学生",
+      "source_provider": "mock",
+      "page_content": "2026 全国大学生 AI 挑战杯由 XX 教育部主办，面向在校大学生。比赛旨在推动 AI 技术在高校的普及和应用。报名截止 2026-07-30。奖金设置：一等奖 5 万元，二等奖 2 万元，三等奖 1 万元。报名入口：https://challenge.example.com/register",
+      "deadline": "2026-07-30",
+      "deadline_status": "confirmed",
+      "deadline_source_url": "https://challenge.example.com/ai-cup-2026",
+      "reward": "5 万元",
+      "organizer": "XX 教育部",
+      "eligibility": "在校大学生",
+      "expected_level": "A"
+    },
+    {
+      "title": "AI 开源社区黑客松",
+      "url": "https://hackathon.example.com/ai-2026",
+      "snippet": "奖金 2 万元，截止 2026-09-01，线上比赛",
+      "source_provider": "mock",
+      "page_content": "AI 开源社区黑客松是面向全球 AI 开发者的线上编程竞赛。参赛者需在 48 小时内完成一个 AI 应用原型。比赛截止 2026-09-01。奖金设置：冠军 2 万元，亚军 1 万元，季军 5000 元。报名入口：https://hackathon.example.com/register",
+      "deadline": "2026-09-01",
+      "deadline_status": "confirmed",
+      "deadline_source_url": "https://hackathon.example.com/ai-2026",
+      "reward": "2 万元",
+      "organizer": "AI 开源社区",
+      "eligibility": "不限",
+      "expected_level": "B"
+    },
+    {
+      "title": "企业 AI 应用创新赛",
+      "url": "https://enterprise.example.com/ai-contest",
+      "snippet": "奖金 1 万元，截止 2026-10-15，面向企业团队",
+      "source_provider": "mock",
+      "page_content": "企业 AI 应用创新赛面向企业团队，旨在推动 AI 技术在企业场景的落地应用。比赛截止 2026-10-15。奖金设置：一等奖 1 万元，二等奖 5000 元。报名入口：https://enterprise.example.com/register",
+      "deadline": "2026-10-15",
+      "deadline_status": "confirmed",
+      "deadline_source_url": "https://enterprise.example.com/ai-contest",
+      "reward": "1 万元",
+      "organizer": "XX 企业",
+      "eligibility": "企业团队",
+      "expected_level": "C"
+    },
+    {
+      "title": "AI 技术沙龙（滚动开放）",
+      "url": "https://meetup.example.com/ai-salon",
+      "snippet": "不定期举办 AI 技术分享，无固定截止日期",
+      "source_provider": "mock",
+      "page_content": "AI 技术沙龙由 AI 社区发起，不定期举办 AI 技术分享活动。每期邀请行业专家分享 AI 最新技术趋势和实践经验。无固定截止日期，滚动开放报名。报名入口：https://meetup.example.com/register",
+      "deadline": "",
+      "deadline_status": "rolling",
+      "deadline_source_url": "",
+      "reward": "无奖金，知识分享",
+      "organizer": "AI 社区",
+      "eligibility": "不限",
+      "expected_level": "C"
+    }
+  ]
+}

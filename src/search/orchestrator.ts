@@ -22,11 +22,13 @@
 import type { ScoredOpportunity, SearchResult, CleanedContent } from "./types";
 import type { RadarRequirementSpec } from "../schema/radar-requirement-spec";
 import type { LLMAdapter } from "../agents/llm-adapter";
+import type { DataMode } from "../demo/data-mode";
 import { providerRegistry } from "./provider-registry";
 import { ruleFilter } from "./rule-filter";
 import { aiFilter, type AIFilterItem } from "./ai-filter";
 import { scoreOpportunities } from "./opportunity-scorer";
 import { deduplicateByUrL } from "./radar-router";
+import { loadDemoSearchResults } from "../demo";
 
 /** 搜索编排器配置 */
 export interface SearchOrchestratorConfig {
@@ -40,6 +42,14 @@ export interface SearchOrchestratorConfig {
   enableContentFetch?: boolean;
   /** Jina Reader 抓取模式：true=Mock内容（默认），false=真实抓取 */
   mockContent?: boolean;
+  /**
+   * 数据模式（Task 036）：
+   *   - "mock"：加载 Mock Demo 数据，跳过真实搜索
+   *   - "recorded"：加载 Recorded 录制数据，跳过真实搜索
+   *   - "live"：（默认）使用真实搜索 Provider
+   * 未设置时默认 "live"，以保护现有测试不依赖环境变量。
+   */
+  dataMode?: DataMode;
 }
 
 /** 搜索编排器结果 */
@@ -68,6 +78,9 @@ const DEFAULT_MIN_RELEVANCE = 50;
 
 /** 跳过内容抓取时的固定相关度 */
 const SKIP_FETCH_RELEVANCE = 50;
+
+/** 默认数据模式（未显式配置时使用 live，保护现有测试） */
+const DEFAULT_DATA_MODE: DataMode = "live";
 
 /**
  * 从 spec 推断雷达类型。
@@ -136,6 +149,7 @@ export class SearchOrchestrator {
   private readonly minRelevance: number;
   private readonly enableContentFetch: boolean;
   private readonly mockContent: boolean;
+  private readonly dataMode: DataMode;
 
   constructor(config: SearchOrchestratorConfig) {
     this.llmAdapter = config.llmAdapter;
@@ -143,6 +157,7 @@ export class SearchOrchestrator {
     this.minRelevance = config.minRelevance ?? DEFAULT_MIN_RELEVANCE;
     this.enableContentFetch = config.enableContentFetch ?? true;
     this.mockContent = config.mockContent ?? true;
+    this.dataMode = config.dataMode ?? DEFAULT_DATA_MODE;
   }
 
   /**
@@ -159,48 +174,74 @@ export class SearchOrchestrator {
     const startTime = Date.now();
     const errors: string[] = [];
 
-    // 步骤 1：推断雷达类型，获取适用 providers
+    // 步骤 0：推断雷达类型（供 Demo 数据加载和真实搜索共用）
     const radarType = inferRadarType(spec);
-    const providers = providerRegistry.getByRadarType(radarType).filter((p) => p.enabled);
 
-    if (providers.length === 0) {
-      errors.push(`无可用搜索 provider（radar_type=${radarType}）`);
-      return {
-        total_raw: 0,
-        total_rule_passed: 0,
-        total_ai_passed: 0,
-        total_scored: 0,
-        opportunities: [],
-        errors,
-        duration_ms: Date.now() - startTime,
-      };
-    }
+    // 步骤 1：根据数据模式获取原始搜索结果（Task 036）
+    // - mock/recorded：加载 Demo 数据，跳过真实搜索
+    // - live：调用真实搜索 Provider
+    let rawResults: SearchResult[];
 
-    // 步骤 2：并行调用各 provider 的 search()
-    const searchQuery = query && query.trim() ? query.trim() : buildQueryFromSpec(spec);
-    const searchOptions = { max_results: this.maxResultsPerProvider };
-
-    const providerResults = await Promise.all(
-      providers.map(async (provider) => {
-        try {
-          const results = await provider.search(searchQuery, searchOptions);
-          return { provider: provider.name, results, error: null as string | null };
-        } catch (err) {
-          const errMsg = err instanceof Error ? err.message : String(err);
-          return { provider: provider.name, results: [] as SearchResult[], error: `provider ${provider.name} 调用失败: ${errMsg}` };
-        }
-      }),
-    );
-
-    // 收集错误
-    for (const r of providerResults) {
-      if (r.error) {
-        errors.push(r.error);
+    if (this.dataMode === "mock" || this.dataMode === "recorded") {
+      // Mock/Recorded 模式：加载 Demo 数据
+      try {
+        rawResults = loadDemoSearchResults(radarType, this.dataMode);
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        errors.push(`加载 Demo 数据失败（mode=${this.dataMode}）: ${errMsg}`);
+        return {
+          total_raw: 0,
+          total_rule_passed: 0,
+          total_ai_passed: 0,
+          total_scored: 0,
+          opportunities: [],
+          errors,
+          duration_ms: Date.now() - startTime,
+        };
       }
-    }
+    } else {
+      // Live 模式：获取适用 providers
+      const providers = providerRegistry.getByRadarType(radarType).filter((p) => p.enabled);
 
-    // 合并搜索结果
-    const rawResults: SearchResult[] = deduplicateByUrL(providerResults.flatMap((r) => r.results));
+      if (providers.length === 0) {
+        errors.push(`无可用搜索 provider（radar_type=${radarType}）`);
+        return {
+          total_raw: 0,
+          total_rule_passed: 0,
+          total_ai_passed: 0,
+          total_scored: 0,
+          opportunities: [],
+          errors,
+          duration_ms: Date.now() - startTime,
+        };
+      }
+
+      // 步骤 2：并行调用各 provider 的 search()
+      const searchQuery = query && query.trim() ? query.trim() : buildQueryFromSpec(spec);
+      const searchOptions = { max_results: this.maxResultsPerProvider };
+
+      const providerResults = await Promise.all(
+        providers.map(async (provider) => {
+          try {
+            const results = await provider.search(searchQuery, searchOptions);
+            return { provider: provider.name, results, error: null as string | null };
+          } catch (err) {
+            const errMsg = err instanceof Error ? err.message : String(err);
+            return { provider: provider.name, results: [] as SearchResult[], error: `provider ${provider.name} 调用失败: ${errMsg}` };
+          }
+        }),
+      );
+
+      // 收集错误
+      for (const r of providerResults) {
+        if (r.error) {
+          errors.push(r.error);
+        }
+      }
+
+      // 合并搜索结果
+      rawResults = deduplicateByUrL(providerResults.flatMap((r) => r.results));
+    }
 
     // 边界情况：无搜索结果
     if (rawResults.length === 0) {

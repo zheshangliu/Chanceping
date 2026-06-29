@@ -1,0 +1,38 @@
+{
+  "requirement_confirmation": {
+    "questions": [
+      "您是个人开发者还是团队？",
+      "您希望找奖金范围是多少的比赛？",
+      "您希望找全国范围还是特定地区的比赛？"
+    ],
+    "confirmation_card": {
+      "client_name": "AI 创作者",
+      "client_type": "个人",
+      "industry": "AI",
+      "business_type": "AI 应用",
+      "primary_goal": "找 AI 比赛机会",
+      "action_intent": "报名比赛",
+      "primary_regions": ["全国"],
+      "core_keywords_zh": ["AI", "比赛", "创新"],
+      "total_confidence": 95,
+      "dimensions": {
+        "client_identity": { "score": 100, "weight": 15 },
+        "business_goal": { "score": 95, "weight": 20 },
+        "opportunity_type": { "score": 95, "weight": 20 },
+        "region_scope": { "score": 90, "weight": 10 },
+        "exclusion_rules": { "score": 90, "weight": 10 },
+        "action_scenario": { "score": 95, "weight": 15 },
+        "report_format": { "score": 95, "weight": 10 }
+      }
+    }
+  },
+  "ai_filter": {
+    "results": [
+      { "title": "2026 全球 AI 创新大赛", "relevant": true, "reason": "AI 赛事，奖金 10 万，全国范围，符合需求" },
+      { "title": "2026 全国大学生 AI 挑战杯", "relevant": true, "reason": "AI 赛事，奖金 5 万，但限在校大学生" },
+      { "title": "AI 开源社区黑客松", "relevant": true, "reason": "AI 赛事，线上，门槛低" },
+      { "title": "企业 AI 应用创新赛", "relevant": false, "reason": "面向企业团队，个人不适合" },
+      { "title": "AI 技术沙龙（滚动开放）", "relevant": false, "reason": "非比赛性质，无奖金" }
+    ]
+  }
+}

@@ -38,6 +38,8 @@ import { QwenAdapter } from "./qwen-adapter";
 import { DeepSeekAdapter } from "./deepseek-adapter";
 import { GlmAdapter } from "./glm-adapter";
 import { getStrategyFromEnv, getStrategy } from "../config/llm-strategy";
+import { getLlmMode } from "../demo/data-mode";
+import { MockLlmAdapter } from "../demo/mock-llm-adapter";
 
 // ============================================================
 // 类型定义
@@ -229,4 +231,27 @@ export class ModelRouter implements LLMAdapter {
     this.adapterCache.set(key, adapter);
     return adapter;
   }
+}
+
+// ============================================================
+// createAdapter 工厂函数（Task 036）
+// ============================================================
+
+/**
+ * 根据环境变量 LLM_MODE 创建适配器实例。
+ *
+ * - LLM_MODE=mock（默认）：返回 MockLlmAdapter，加载预设响应，用于 E2E 测试和演示
+ * - LLM_MODE=live：返回 ModelRouter 实例，走真实 LLM Provider 路由
+ *
+ * 此函数是 Task 036 的 LLM 模式切换入口，搜索编排器 / 对话管理器
+ * 可通过此函数获取适配器，无需感知 LLM_MODE 的具体值。
+ *
+ * @returns LLMAdapter 实例（Mock 或真实）
+ */
+export function createAdapter(): LLMAdapter {
+  if (getLlmMode() === "mock") {
+    return new MockLlmAdapter();
+  }
+  // Live 模式：返回 ModelRouter（多 Provider 路由 + fallback）
+  return new ModelRouter();
 }

@@ -22,6 +22,7 @@
     "verify:review": "tsx scripts/verify-task030.ts",
     "verify:export": "tsx scripts/verify-task031.ts",
     "verify:task034": "tsx scripts/verify-task034.ts",
+    "verify:task036": "tsx scripts/verify-task036.ts",
     "precheck": "tsx scripts/precheck.ts"
   },
   "dependencies": {
