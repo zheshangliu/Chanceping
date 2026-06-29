@@ -2,6 +2,7 @@ import { Hono } from "hono";
 import type { AppContext } from "../context";
 import type { ApiResponse, OpportunityAddRequest, OpportunityUpdateRequest } from "../types";
 import type { OpportunityCard } from "../../schema/opportunity-card";
+import type { Feedback, ActionIntent, FeedbackEvaluation, ActionIntentType, ActionStatusType } from "../../schema/feedback";
 import type { StoreQuery, StoreEntry, RadarType } from "../../agents/opportunity-store";
 
 export function opportunityRoutes(ctx: AppContext): Hono {
@@ -149,6 +150,74 @@ export function opportunityRoutes(ctx: AppContext): Hono {
       return c.json({ success: true, data: result.entry, error: null, duration_ms: Date.now() - start } satisfies ApiResponse);
     } catch (err) {
       return c.json({ success: false, data: null, error: { code: "STAR_ERROR", message: err instanceof Error ? err.message : String(err) }, duration_ms: Date.now() - start } satisfies ApiResponse, 500);
+    }
+  });
+
+  // PATCH /:key/feedback - 更新反馈评价 + 行动意图（Task 039 新增）
+  app.patch("/:key/feedback", async (c) => {
+    const start = Date.now();
+    let body: {
+      feedback?: { evaluation: FeedbackEvaluation; note?: string };
+      action_intent?: {
+        intent?: ActionIntentType;
+        status?: ActionStatusType;
+        note?: string;
+        next_action_date?: string;
+      };
+    };
+    try {
+      body = await c.req.json();
+    } catch {
+      return c.json({ success: false, data: null, error: { code: "BAD_REQUEST", message: "请求体不是合法 JSON" }, duration_ms: Date.now() - start } satisfies ApiResponse, 400);
+    }
+    try {
+      const key = c.req.param("key");
+      const existing = ctx.store.get(key);
+      if (!existing) {
+        return c.json({ success: false, data: null, error: { code: "NOT_FOUND", message: `dedup_key=${key} 不存在` }, duration_ms: Date.now() - start } satisfies ApiResponse, 404);
+      }
+
+      const updates: Partial<OpportunityCard> = {};
+
+      // 更新反馈评价（整体覆盖，自动设置 updated_at）
+      if (body.feedback) {
+        const feedback: Feedback = {
+          evaluation: body.feedback.evaluation,
+          updated_at: new Date().toISOString(),
+        };
+        if (body.feedback.note !== undefined) {
+          feedback.note = body.feedback.note;
+        }
+        updates.feedback = feedback;
+      }
+
+      // 更新行动意图（部分更新：合并已有值 + 传入值）
+      if (body.action_intent) {
+        const existingIntent = existing.card.action_intent;
+        const actionIntent: ActionIntent = {
+          intent: body.action_intent.intent ?? existingIntent?.intent ?? "considering",
+          status: body.action_intent.status ?? existingIntent?.status ?? "not_started",
+        };
+        if (body.action_intent.note !== undefined) {
+          actionIntent.note = body.action_intent.note;
+        } else if (existingIntent?.note !== undefined) {
+          actionIntent.note = existingIntent.note;
+        }
+        if (body.action_intent.next_action_date !== undefined) {
+          actionIntent.next_action_date = body.action_intent.next_action_date;
+        } else if (existingIntent?.next_action_date !== undefined) {
+          actionIntent.next_action_date = existingIntent.next_action_date;
+        }
+        updates.action_intent = actionIntent;
+      }
+
+      const entry = ctx.store.update(key, updates);
+      if (!entry) {
+        return c.json({ success: false, data: null, error: { code: "STORE_ERROR", message: "更新失败" }, duration_ms: Date.now() - start } satisfies ApiResponse, 500);
+      }
+      return c.json({ success: true, data: entry, error: null, duration_ms: Date.now() - start } satisfies ApiResponse);
+    } catch (err) {
+      return c.json({ success: false, data: null, error: { code: "STORE_ERROR", message: err instanceof Error ? err.message : String(err) }, duration_ms: Date.now() - start } satisfies ApiResponse, 500);
     }
   });
 

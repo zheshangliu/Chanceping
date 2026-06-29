@@ -105,8 +105,15 @@
 
     <!-- Tab 3: 搜索 -->
     <section class="tab-panel" id="panel-search">
-      <div class="placeholder-panel">
-        <p>搜索面板（Task 039 实现）</p>
+      <div class="search-container">
+        <!-- 搜索状态栏 -->
+        <div class="search-status-bar" id="search-status-bar">
+          <span class="search-placeholder">点击"开始搜索"查找机会</span>
+        </div>
+        <!-- 搜索结果列表 -->
+        <div class="search-results" id="search-results">
+          <!-- 动态生成机会卡片 -->
+        </div>
       </div>
     </section>
 
@@ -196,6 +203,7 @@ $北京
 
   <script src="/home.js"></script>
   <script src="/requirement-chat.js"></script>
+  <script src="/search.js"></script>
   <script src="/watch-rules-editor.js"></script>
 </body>
 </html>

@@ -9,6 +9,7 @@
  */
 
 import type { CardVisibleLevel } from "./scoring-rules";
+import type { Feedback, ActionIntent } from "./feedback";
 import { t } from "../i18n/locales";
 
 /** 机会卡片状态（Task 030 扩展：+tracking/missed/expired） */
@@ -65,6 +66,10 @@ export interface OpportunityCard {
   status: OpportunityCardStatus;
   /** T2: 全局唯一标识，RSS/搜索源提供时优先用于去重（可选，向后兼容） */
   guid?: string;
+  /** 反馈评价（V3.1 新增，Task 039） */
+  feedback?: Feedback;
+  /** 行动意图（V3.1 新增，Task 039） */
+  action_intent?: ActionIntent;
 }
 
 // ============================================================
