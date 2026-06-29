@@ -53,6 +53,16 @@ window.showToast = showToast;
 // 首页逻辑
 // ============================================================
 
+// Task 043: 雷达类型标签映射
+const RADAR_LABELS = {
+  ai_competition: "AI 赛事",
+  opc_policy: "政策申报",
+  cultural_heritage: "文创非遗",
+};
+
+// Task 043: 当前选中的雷达类型（模块变量）
+let selectedRadar = "ai_competition";
+
 document.addEventListener("DOMContentLoaded", () => {
   // Task 041: Demo Mode 标识（URL 参数 ?demo=true 触发显示）
   const urlParams = new URLSearchParams(window.location.search);
@@ -65,6 +75,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const startBtn = document.getElementById("home-start-btn");
   if (!input || !startBtn) return;
 
+  // Task 043: 雷达选择按钮绑定
+  document.querySelectorAll(".radar-option").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      selectedRadar = btn.dataset.radar || "ai_competition";
+      document.querySelectorAll(".radar-option").forEach((b) => b.classList.remove("active"));
+      btn.classList.add("active");
+    });
+  });
+
   // 开始按钮：提交需求，切换到需求确认 Tab，并发送第一条消息
   startBtn.addEventListener("click", () => {
     const text = input.value.trim();
@@ -76,15 +95,23 @@ document.addEventListener("DOMContentLoaded", () => {
     // 切换到需求确认 Tab
     switchTab("chat");
 
+    // Task 043: 更新聊天区雷达标识
+    const chatBadge = document.getElementById("chat-radar-badge");
+    if (chatBadge) chatBadge.textContent = (RADAR_LABELS[selectedRadar] || "未知") + "雷达";
+
+    // Task 043: 更新搜索页雷达徽章
+    const searchBadge = document.getElementById("search-radar-badge");
+    if (searchBadge) searchBadge.textContent = RADAR_LABELS[selectedRadar] || "未知";
+
     // 触发 home-submit 事件（通知 requirement-chat.js 重置状态并准备接收）
     window.dispatchEvent(
       new CustomEvent("home-submit", {
-        detail: { message: text, radar_type: "ai_competition" },
+        detail: { message: text, radar_type: selectedRadar },
       }),
     );
 
     // 直接调用 POST /api/chat 发送第一条消息
-    sendFirstMessage(text, "ai_competition");
+    sendFirstMessage(text, selectedRadar);
 
     // 清空首页输入框
     input.value = "";
@@ -98,10 +125,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // 快捷示例：点击后填入输入框并提交
+  // Task 043: 快捷示例：点击后填入输入框，同步雷达选择，并提交
   document.querySelectorAll(".example-btn").forEach((btn) => {
     btn.addEventListener("click", () => {
       input.value = btn.dataset.text || "";
+      // 同步雷达选择（从 data-radar 读取）
+      selectedRadar = btn.dataset.radar || "ai_competition";
+      document.querySelectorAll(".radar-option").forEach((b) => {
+        b.classList.toggle("active", b.dataset.radar === selectedRadar);
+      });
       startBtn.click();
     });
   });

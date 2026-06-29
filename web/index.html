@@ -37,6 +37,12 @@
           <h2 class="home-title">ChancePing 盯机会</h2>
           <p class="home-subtitle">告诉 AI 你要盯什么，它在合适的时间把对的机会推送给你</p>
         </div>
+        <div class="radar-selector" id="radar-selector">
+          <span class="radar-label">选择雷达：</span>
+          <button class="radar-option active" data-radar="ai_competition">AI 赛事</button>
+          <button class="radar-option" data-radar="opc_policy">政策申报</button>
+          <button class="radar-option" data-radar="cultural_heritage">文创非遗</button>
+        </div>
         <div class="home-input-area">
           <textarea id="home-input" placeholder="你想盯什么机会？&#10;例如：我要盯 AI 相关的比赛机会" rows="3"></textarea>
           <button id="home-start-btn">开始</button>
@@ -55,6 +61,9 @@
       <div class="chat-layout">
         <!-- 对话区（左侧） -->
         <div class="chat-area">
+          <div class="chat-header">
+            <span class="chat-radar-badge" id="chat-radar-badge">AI 赛事雷达</span>
+          </div>
           <div class="chat-messages" id="chat-messages">
             <p class="placeholder">在首页输入需求，或直接在下方输入开始对话</p>
           </div>
@@ -108,6 +117,7 @@
       <div class="search-container">
         <!-- 搜索状态栏 -->
         <div class="search-status-bar" id="search-status-bar">
+          <span class="radar-badge" id="search-radar-badge">AI 赛事</span>
           <span class="search-placeholder">点击"开始搜索"查找机会</span>
         </div>
         <!-- 搜索结果列表 -->

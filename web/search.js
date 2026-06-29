@@ -26,6 +26,43 @@
   let starredKeys = new Set(); // 已 Star 的 dedup_key
   let cardKeyMap = new Map(); // guid/url → dedup_key（已入库的映射）
 
+  // Task 043: 雷达类型标签映射
+  const RADAR_LABELS = {
+    ai_competition: "AI 赛事",
+    opc_policy: "政策申报",
+    cultural_heritage: "文创非遗",
+  };
+
+  // Task 043: 雷达类型 → spec 映射（后端通过 spec.opportunity_scope.primary_opportunity_types 推断雷达类型）
+  const RADAR_SPEC_MAP = {
+    ai_competition: ["AI 比赛"],
+    opc_policy: ["政策补贴"],
+    cultural_heritage: ["文创非遗"],
+  };
+
+  // Task 043: 雷达名称获取
+  function radarLabel(radarType) {
+    return RADAR_LABELS[radarType] || "未知雷达";
+  }
+
+  // Task 043: 根据雷达类型构造搜索 spec
+  function buildRadarSpec(radarType) {
+    const types = RADAR_SPEC_MAP[radarType] || RADAR_SPEC_MAP.ai_competition;
+    return {
+      opportunity_scope: { primary_opportunity_types: types },
+      keyword_strategy: { core_keywords_zh: [], core_keywords_en: [] },
+      filter_rules: { must_exclude: [] },
+      region_scope: { excluded_regions: [] },
+    };
+  }
+
+  // Task 043: 雷达类型 → CSS 着色类名
+  function radarTagClass(radarType) {
+    if (radarType === "opc_policy") return "opc";
+    if (radarType === "cultural_heritage") return "cultural";
+    return "ai";
+  }
+
   // 五维评分维度（固定顺序，与任务书 6.3 节一致）
   const SCORE_DIMENSIONS = [
     { key: "fit", label: "匹配度", weight: 30 },
@@ -85,7 +122,9 @@
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          radar_type: currentRadarType,
           enable_content_fetch: false,
+          spec: buildRadarSpec(currentRadarType),
         }),
       });
       const json = await res.json();
@@ -107,8 +146,11 @@
   function showSearching() {
     const bar = document.getElementById("search-status-bar");
     const results = document.getElementById("search-results");
+    // Task 043: 更新雷达徽章
+    const radarBadge = document.getElementById("search-radar-badge");
+    if (radarBadge) radarBadge.textContent = radarLabel(currentRadarType);
     if (bar) {
-      bar.innerHTML = `<span class="search-loading">正在搜索 ${radarTypeLabel()} 机会...</span>`;
+      bar.innerHTML = `<span class="radar-badge">${radarLabel(currentRadarType)}</span><span class="search-loading">⏳ 正在搜索${radarLabel(currentRadarType)}机会...</span>`;
     }
     if (results) {
       results.innerHTML = `<div class="search-spinner"></div>`;
@@ -134,7 +176,8 @@
     const bar = document.getElementById("search-status-bar");
     if (bar) {
       const durationSec = (data.duration_ms / 1000).toFixed(1);
-      bar.innerHTML = `<span class="search-success">✅ 找到 ${data.opportunities.length} 条机会（原始 ${data.total_raw} → 粗筛 ${data.total_rule_passed} → 精筛 ${data.total_ai_passed}）耗时 ${durationSec}s</span>`;
+      const radarName = radarLabel(currentRadarType);
+      bar.innerHTML = `<span class="radar-badge">${radarName}</span><span class="search-success">✅ ${radarName}：找到 ${data.opportunities.length} 条机会（原始 ${data.total_raw} → 粗筛 ${data.total_rule_passed} → 精筛 ${data.total_ai_passed}）耗时 ${durationSec}s</span>`;
     }
   }
 
@@ -207,6 +250,7 @@
         <button class="expand-btn">▼</button>
       </div>
       <div class="card-meta">
+        <span class="card-radar-tag radar-${radarTagClass(currentRadarType)}">${radarLabel(currentRadarType)}</span>
         <span class="card-source">${escapeHtml(source)}</span>
       </div>
       ${reason ? `<div class="card-reason">💡 ${escapeHtml(reason)}</div>` : ""}

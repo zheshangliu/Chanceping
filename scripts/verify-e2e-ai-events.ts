@@ -553,6 +553,8 @@ async function main(): Promise<void> {
       console.log(`    实际: ${f.actual}`);
     }
   }
+  console.log("============================================================");
+  console.log(`总计: ${passCount} PASS / ${failCount} FAIL`);
   console.log("============================================================\n");
 
   if (failCount > 0) {
