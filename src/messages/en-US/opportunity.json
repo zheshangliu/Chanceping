@@ -21,5 +21,15 @@
   "opportunity.level.A": "High-value opportunity, worth serious consideration",
   "opportunity.level.B": "Worth watching, suitable for bookmarking or observation",
   "opportunity.level.C": "Low priority, for reference only",
-  "opportunity.level.hidden": "Not actively shown by default"
+  "opportunity.level.D": "Not recommended",
+  "opportunity.level.hidden": "Not actively shown by default",
+  "opportunity.sourceBadge.official": "Official",
+  "opportunity.sourceBadge.government": "Government",
+  "opportunity.sourceBadge.authoritative": "Authoritative",
+  "opportunity.sourceBadge.multiSource": "Multi-Source",
+  "opportunity.sourceBadge.verified": "Verified",
+  "opportunity.sourceBadge.unverified": "Unverified",
+  "opportunity.decision.attack": "Attack",
+  "opportunity.decision.hold": "Hold",
+  "opportunity.decision.archive": "Archive"
 }

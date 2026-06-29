@@ -491,9 +491,10 @@ async function main(): Promise<void> {
   section("5.5 工程约束自检");
 
   // 测试 38: 仅引入 meilisearch 1 个新依赖
+  // 注：exceljs/mammoth/pdf-parse 为后续 Task E（文件上传）合法引入，不计入 Task 023 违规
   const pkgJson = JSON.parse(fs.readFileSync("package.json", "utf-8"));
   const deps = Object.keys(pkgJson.dependencies);
-  const newDeps = deps.filter((d: string) => !["@hono/node-server", "ajv", "ajv-formats", "hono", "i18next"].includes(d));
+  const newDeps = deps.filter((d: string) => !["@hono/node-server", "ajv", "ajv-formats", "hono", "i18next", "exceljs", "mammoth", "pdf-parse"].includes(d));
   check(newDeps.includes("meilisearch"), `38. package.json 含 meilisearch 依赖`);
   check(newDeps.length === 1, `38.1 仅引入 1 个新依赖（meilisearch），实际新增：${newDeps.join(",")}`);
 

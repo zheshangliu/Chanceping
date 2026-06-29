@@ -461,6 +461,7 @@ async function main(): Promise<void> {
   }
 
   // 测试 26: 不引入额外依赖（除 hono + @hono/node-server；Task 023 引入 meilisearch 为合法依赖）
+  // 注：exceljs/mammoth/pdf-parse 为后续 Task E（文件上传）合法引入，不计入 Task 022 违规
   {
     const pkg = JSON.parse(fs.readFileSync("package.json", "utf-8"));
     const deps = Object.keys(pkg.dependencies);
@@ -470,7 +471,7 @@ async function main(): Promise<void> {
     check(
       "26. 仅引入 hono + @hono/node-server 两个新依赖（Task 023 meilisearch 除外）",
       newDeps.includes("hono") && newDeps.includes("@hono/node-server") &&
-        newDeps.every((d) => ["hono", "@hono/node-server", "meilisearch"].includes(d)),
+        newDeps.every((d) => ["hono", "@hono/node-server", "meilisearch", "exceljs", "mammoth", "pdf-parse"].includes(d)),
       `newDeps=${JSON.stringify(newDeps)}`,
     );
   }

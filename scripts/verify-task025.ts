@@ -205,6 +205,10 @@ function testEngineeringConstraints(): void {
     "hono",
     "i18next",
     "meilisearch",
+    // 注：以下为后续 Task E（文件上传）合法引入，不计入 Task 025 违规
+    "exceljs",
+    "mammoth",
+    "pdf-parse",
   ];
   const hasNewDeps = deps.some((d) => !expectedDeps.includes(d));
   check(!hasNewDeps, "7.1 不引入新 npm 依赖（仅 HTML/CSS/JS）");

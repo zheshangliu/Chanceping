@@ -21,5 +21,15 @@
   "opportunity.level.A": "高价值机会，建议认真考虑",
   "opportunity.level.B": "可关注，适合收藏或观察",
   "opportunity.level.C": "低优先级，仅供参考",
-  "opportunity.level.hidden": "默认不主动展示"
+  "opportunity.level.D": "不推荐",
+  "opportunity.level.hidden": "默认不主动展示",
+  "opportunity.sourceBadge.official": "官方",
+  "opportunity.sourceBadge.government": "政府",
+  "opportunity.sourceBadge.authoritative": "权威媒体",
+  "opportunity.sourceBadge.multiSource": "多源验证",
+  "opportunity.sourceBadge.verified": "已验证",
+  "opportunity.sourceBadge.unverified": "未验证",
+  "opportunity.decision.attack": "立即行动",
+  "opportunity.decision.hold": "观望",
+  "opportunity.decision.archive": "归档"
 }

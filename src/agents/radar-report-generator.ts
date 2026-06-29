@@ -21,6 +21,10 @@
 import type { RadarRequirementSpec } from "../schema/radar-requirement-spec";
 import type { OpportunityCard, OpportunityCardStatus } from "../schema/opportunity-card";
 import type { VisibleLevel } from "../schema/scoring-rules";
+import type { SourceCandidate } from "../schema/source-candidate";
+import type { EvidenceItem } from "../schema/evidence-item";
+import { CONFIDENCE_GRADE_LABELS, SOURCE_TYPE_LABELS } from "../schema/source-candidate";
+import { EVIDENCE_FIELD_LABELS } from "../schema/evidence-item";
 import { BRAND } from "../brand/constants";
 import { t } from "../i18n/locales";
 
@@ -42,6 +46,10 @@ export interface RadarReportInput {
   period_end: string;
   /** 报告生成时间（ISO 字符串，可选，默认当前时间） */
   generated_at?: string;
+  /** V1.3 新增：来源候选数据（可选，用于来源索引章节） */
+  sourceCandidates?: SourceCandidate[];
+  /** V1.3 新增：证据项数据（可选，用于来源索引章节的待复核字段） */
+  evidenceItems?: EvidenceItem[];
 }
 
 /** 雷达报告生成结果 */
@@ -63,9 +71,15 @@ export interface RadarReportResult {
     a_count: number;
     b_count: number;
     c_count: number;
+    /** V1.3 新增：D 级（不推荐）数量 */
+    d_count: number;
     hidden_count: number;
     expiring_soon_count: number;  // 7 天内截止
     excluded_count: number;       // 被排除的数量
+    /** V1.3 新增：来源数量 */
+    source_count: number;
+    /** V1.3 新增：证据项数量 */
+    evidence_count: number;
   };
   /** 章节数量（固定 9） */
   sections_count: number;
@@ -166,9 +180,14 @@ function isExcluded(
   spec: RadarRequirementSpec,
   baseDate: Date,
 ): { excluded: boolean; reason: string } {
+  const level = getVisibleLevel(opp);
   // hidden
-  if (getVisibleLevel(opp) === "hidden") {
-    return { excluded: true, reason: "等级为 hidden（分数 < 50），不主动展示" };
+  if (level === "hidden") {
+    return { excluded: true, reason: "等级为 hidden，不主动展示" };
+  }
+  // V1.3 新增：D 级（不推荐）进入排除章节
+  if (level === "D") {
+    return { excluded: true, reason: "等级为 D（不推荐），不建议投入" };
   }
 
   // 类型匹配排除
@@ -456,6 +475,64 @@ function buildSection8(
   return lines.join("\n");
 }
 
+/** 章节 8.5：来源索引（V1.3 新增）
+ *
+ * 安全红线 #5：报告来源索引只能从 SourceCandidate[] 渲染，不调用 LLM，不编造 URL。
+ * 按 SourceConfidenceGrade 排序（A1 > A2 > ... > E5），并列出待复核字段。
+ */
+function buildSourceIndex(
+  sources: SourceCandidate[],
+  evidence: EvidenceItem[],
+): string {
+  const lines: string[] = [`## ${t("report.section.sourceIndex")}`, ""];
+  lines.push("> 本报告所有机会的来源信息，按可信度等级排列。");
+  lines.push("");
+
+  if (sources.length === 0) {
+    lines.push("本周暂无来源信息");
+    lines.push("", "---");
+    return lines.join("\n");
+  }
+
+  // 按可信度等级排序（A1 > A2 > B1 > ... > E5）
+  const gradeOrder: Record<string, number> = {
+    A1: 1, A2: 2, B1: 3, B2: 4, C1: 5, C3: 6, D4: 7, E5: 8,
+  };
+  const sorted = [...sources].sort((a, b) =>
+    (gradeOrder[a.confidenceGrade] ?? 99) - (gradeOrder[b.confidenceGrade] ?? 99),
+  );
+
+  lines.push("| # | 来源 | 类型 | 可信度 | 验证状态 | 链接 |");
+  lines.push("|---|---|---|---|---|---|");
+  sorted.forEach((s, i) => {
+    const typeLabel = SOURCE_TYPE_LABELS[s.sourceType] ?? s.sourceType;
+    const gradeLabel = CONFIDENCE_GRADE_LABELS[s.confidenceGrade] ?? s.confidenceGrade;
+    const statusLabel =
+      s.verificationStatus === "verified" ? "✓ 已验证"
+        : s.verificationStatus === "partially_verified" ? "◐ 部分验证"
+          : s.verificationStatus === "rejected" ? "✗ 已拒绝"
+            : "○ 未验证";
+    lines.push(
+      `| ${i + 1} | ${s.mediaName} | ${typeLabel} | ${s.confidenceGrade}（${gradeLabel}） | ${statusLabel} | [查看](${s.url}) |`,
+    );
+  });
+
+  // 待复核字段
+  const needsReview = evidence.filter((e) => e.needsReview);
+  if (needsReview.length > 0) {
+    lines.push("");
+    lines.push("### 待复核字段");
+    lines.push("");
+    needsReview.forEach((e) => {
+      const fieldLabel = EVIDENCE_FIELD_LABELS[e.field] ?? e.field;
+      lines.push(`- ${fieldLabel}：${e.value}（来源可信度不足，需人工复核）`);
+    });
+  }
+
+  lines.push("", "---");
+  return lines.join("\n");
+}
+
 /** 本周结论 */
 function buildConclusion(
   sOpps: OpportunityCard[],
@@ -522,7 +599,9 @@ export function generateRadarReport(input: RadarReportInput): RadarReportResult 
       generated_at: generatedAt,
       stats: {
         total_opportunities: 0, s_count: 0, a_count: 0, b_count: 0,
-        c_count: 0, hidden_count: 0, expiring_soon_count: 0, excluded_count: 0,
+        c_count: 0, d_count: 0, hidden_count: 0,
+        expiring_soon_count: 0, excluded_count: 0,
+        source_count: 0, evidence_count: 0,
       },
       sections_count: 0,
     };
@@ -539,7 +618,9 @@ export function generateRadarReport(input: RadarReportInput): RadarReportResult 
       generated_at: generatedAt,
       stats: {
         total_opportunities: 0, s_count: 0, a_count: 0, b_count: 0,
-        c_count: 0, hidden_count: 0, expiring_soon_count: 0, excluded_count: 0,
+        c_count: 0, d_count: 0, hidden_count: 0,
+        expiring_soon_count: 0, excluded_count: 0,
+        source_count: 0, evidence_count: 0,
       },
       sections_count: 0,
     };
@@ -583,6 +664,8 @@ export function generateRadarReport(input: RadarReportInput): RadarReportResult 
 
   // hidden 统计
   const hiddenCount = opportunities.filter((o) => getVisibleLevel(o) === "hidden").length;
+  // V1.3 新增：D 级统计
+  const dCount = opportunities.filter((o) => getVisibleLevel(o) === "D").length;
 
   // 统计
   const stats: RadarReportResult["stats"] = {
@@ -591,9 +674,12 @@ export function generateRadarReport(input: RadarReportInput): RadarReportResult 
     a_count: aOpps.length,
     b_count: bOpps.length,
     c_count: cOpps.length,
+    d_count: dCount,
     hidden_count: hiddenCount,
     expiring_soon_count: expiringSoon.length,
     excluded_count: excluded.length,
+    source_count: input.sourceCandidates?.length ?? 0,
+    evidence_count: input.evidenceItems?.length ?? 0,
   };
 
   // 需人工复核项
@@ -602,7 +688,7 @@ export function generateRadarReport(input: RadarReportInput): RadarReportResult 
   // 详情卡片机会（非 hidden，非排除）
   const cardOpps = [...sOpps, ...aOpps, ...bOpps, ...cOpps];
 
-  // 组装 9 章节 + 元信息 + 结论
+  // 组装 9 章节 + 元信息 + 结论（V1.3 新增来源索引章节）
   const parts: string[] = [
     buildHeader(spec, radarTypeName, period_start, period_end, generatedAt),
     "",
@@ -615,6 +701,8 @@ export function generateRadarReport(input: RadarReportInput): RadarReportResult 
     buildSection6(sOpps, aOpps, expiringSoon, requiresManualReview, bOpps, baseDate),
     buildSection7(excluded),
     buildSection8(bOpps, spec, baseDate),
+    // V1.3 新增：来源索引章节
+    buildSourceIndex(input.sourceCandidates ?? [], input.evidenceItems ?? []),
     buildConclusion(sOpps, aOpps, bOpps, expiringSoon, requiresManualReview, baseDate),
   ];
 

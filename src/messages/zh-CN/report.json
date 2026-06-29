@@ -10,6 +10,7 @@
   "report.section.suggestedAction": "6. 本周建议行动",
   "report.section.excluded": "7. 不建议投入的机会",
   "report.section.nextWeekTracking": "8. 下周继续追踪",
+  "report.section.sourceIndex": "8.5 来源索引",
   "report.section.dataSource": "八、信息来源",
   "report.section.conclusion": "本周结论"
 }

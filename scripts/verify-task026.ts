@@ -327,7 +327,8 @@ function testEngineeringConstraints(): void {
   const pkgPath = path.resolve(process.cwd(), "package.json");
   const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf-8"));
   const deps = Object.keys(pkg.dependencies ?? {});
-  const expectedDeps = ["@hono/node-server", "ajv", "ajv-formats", "hono", "i18next", "meilisearch"];
+  // 注：exceljs/mammoth/pdf-parse 为后续 Task E（文件上传）合法引入，不计入 Task 026 违规
+  const expectedDeps = ["@hono/node-server", "ajv", "ajv-formats", "hono", "i18next", "meilisearch", "exceljs", "mammoth", "pdf-parse"];
   const hasNewDeps = deps.some((d) => !expectedDeps.includes(d));
   check(!hasNewDeps, "8.1 不引入新 npm 依赖");
 

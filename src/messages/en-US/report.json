@@ -10,6 +10,7 @@
   "report.section.suggestedAction": "6. Suggested Actions This Week",
   "report.section.excluded": "7. Not Recommended",
   "report.section.nextWeekTracking": "8. Continue Tracking Next Week",
+  "report.section.sourceIndex": "8.5 Source Index",
   "report.section.dataSource": "VIII. Data Sources",
   "report.section.conclusion": "This Week's Conclusion"
 }

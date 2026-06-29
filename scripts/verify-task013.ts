@@ -209,7 +209,8 @@ console.log("[验收 5.1] 导出功能\n");
     generated_at: "2026-06-27T12:00:00.000Z",
     stats: {
       total_opportunities: 0, s_count: 0, a_count: 0, b_count: 0,
-      c_count: 0, hidden_count: 0, expiring_soon_count: 0, excluded_count: 0,
+      c_count: 0, d_count: 0, hidden_count: 0, expiring_soon_count: 0, excluded_count: 0,
+      source_count: 0, evidence_count: 0,
     },
     sections_count: 9,
   };
@@ -232,7 +233,8 @@ console.log("[验收 5.1] 导出功能\n");
     generated_at: "2026-06-27T12:00:00.000Z",
     stats: {
       total_opportunities: 0, s_count: 0, a_count: 0, b_count: 0,
-      c_count: 0, hidden_count: 0, expiring_soon_count: 0, excluded_count: 0,
+      c_count: 0, d_count: 0, hidden_count: 0, expiring_soon_count: 0, excluded_count: 0,
+      source_count: 0, evidence_count: 0,
     },
     sections_count: 0,
   };
@@ -255,7 +257,8 @@ console.log("[验收 5.1] 导出功能\n");
     generated_at: "2026-06-27T12:00:00.000Z",
     stats: {
       total_opportunities: 0, s_count: 0, a_count: 0, b_count: 0,
-      c_count: 0, hidden_count: 0, expiring_soon_count: 0, excluded_count: 0,
+      c_count: 0, d_count: 0, hidden_count: 0, expiring_soon_count: 0, excluded_count: 0,
+      source_count: 0, evidence_count: 0,
     },
     sections_count: 9,
   };
