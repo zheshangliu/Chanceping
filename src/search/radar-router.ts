@@ -13,6 +13,7 @@
 
 import type { SearchResult } from "./types";
 import { normalizeUrl } from "../utils/url-normalizer";
+import type { RadarRegistry } from "../agents/radar-registry";
 
 // ============================================================
 // 雷达路由规则
@@ -43,6 +44,23 @@ const DEFAULT_PROVIDERS = ["serper"];
  */
 export function getProviderNamesForRadar(radarType: string): string[] {
   return RADAR_ROUTING[radarType] ?? DEFAULT_PROVIDERS;
+}
+
+/**
+ * 按雷达 ID 获取 Provider 名称列表（V1.5-02 新增）。
+ *
+ * 通过 RadarRegistry 查询雷达的 providerRouting，兼容旧式 radar_type 字符串。
+ * 新代码应优先使用此函数，旧代码可继续使用 getProviderNamesForRadar。
+ *
+ * @param radarId 雷达 ID 或旧式 radar_type 字符串
+ * @param registry 雷达注册表实例
+ * @returns Provider 名称数组（如 ["serper", "exa"]），未知 fallback 到 ["serper"]
+ */
+export function getProviderNamesForRadarId(
+  radarId: string,
+  registry: RadarRegistry,
+): string[] {
+  return registry.getProvidersForRadar(radarId);
 }
 
 // ============================================================

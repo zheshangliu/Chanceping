@@ -16,6 +16,9 @@ import { ConversationManager } from "../agents/conversation-manager";
 import { createDefaultWatchStore } from "../watch/watch-store";
 import type { FileParser } from "../schema/user-input-source";
 import { FileParserRouter } from "../search/file-parser-router";
+import { JsonRadarStore, JsonRadarRunStore } from "../agents/radar-store";
+import type { RadarStore, RadarRunStore } from "../agents/radar-store";
+import { RadarRegistry } from "../agents/radar-registry";
 
 /** 会话池中的条目 */
 interface ConversationEntry {
@@ -37,6 +40,12 @@ export interface AppContext {
   conversations: Map<string, ConversationEntry>;
   /** V1.3 新增：文件解析器（文件上传功能） */
   fileParser?: FileParser;
+  /** V1.5 新增：雷达存储 */
+  radarStore: RadarStore;
+  /** V1.5 新增：运行记录存储 */
+  radarRunStore: RadarRunStore;
+  /** V1.5 新增：雷达注册表（单例） */
+  radarRegistry: RadarRegistry;
 }
 
 /**
@@ -53,6 +62,12 @@ export function createAppContext(): AppContext {
   const starManager = new StarManager(store);
   const watchStore = createDefaultWatchStore();
 
+  // V1.5 新增：雷达存储 + 注册表
+  const radarStore = new JsonRadarStore();
+  const radarRunStore = new JsonRadarRunStore();
+  const radarRegistry = new RadarRegistry(radarStore);
+  radarRegistry.initialize(); // 初始化 3 个内置雷达
+
   return {
     llmAdapter,
     store,
@@ -60,5 +75,8 @@ export function createAppContext(): AppContext {
     watchStore,
     conversations: new Map(),
     fileParser: new FileParserRouter(),
+    radarStore,
+    radarRunStore,
+    radarRegistry,
   };
 }
