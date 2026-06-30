@@ -20,6 +20,7 @@
  */
 
 import type { ScoredOpportunity, SearchResult, CleanedContent } from "./types";
+import type { SearchProvider } from "./provider-registry";
 import type { RadarRequirementSpec } from "../schema/radar-requirement-spec";
 import type { ProviderRouting } from "../schema/radar";
 import type { LLMAdapter } from "../agents/llm-adapter";
@@ -268,8 +269,8 @@ export class SearchOrchestrator {
       // Live 模式：获取适用 providers
       // V1.5 自检：优先使用 providerRouting，fallback 到 inferRadarType
       // V1.6-08：支持 primary 全失败时启用 fallback provider
-      let primaryProviders;
-      let fallbackProviders: typeof primaryProviders = [];
+      let primaryProviders: SearchProvider[] = [];
+      let fallbackProviders: SearchProvider[] = [];
       let providerDegradation: SearchOrchestratorResult["providerDegradation"] | undefined;
 
       if (providerRouting && providerRouting.primary && providerRouting.primary.length > 0) {
