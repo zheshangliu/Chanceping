@@ -141,6 +141,12 @@ export function reportRoutes(ctx: AppContext): Hono {
         });
         ctx.reportStore.save();
         (result as { reportId?: string }).reportId = meta.id;
+
+        // V1.5 评审v2 新增：回写 RadarRun.reportId（当 body.run_id 存在时）
+        if (body.run_id && ctx.radarRunStore) {
+          ctx.radarRunStore.update(body.run_id, { reportId: meta.id });
+          ctx.radarRunStore.save();
+        }
       }
 
       return c.json({ success: result.success, data: result, error: result.error ? { code: "REPORT_ERROR", message: result.error } : null, duration_ms: Date.now() - start } satisfies ApiResponse);
@@ -189,7 +195,7 @@ export function reportRoutes(ctx: AppContext): Hono {
 
       // V1.5-08 新增：写入报告元数据（仅当 body.radar_id 存在时）
       if (body.radar_id) {
-        ctx.reportStore.create({
+        const meta = ctx.reportStore.create({
           radarId: body.radar_id,
           title: `${radarType} 导出报告 ${input.period_start} ~ ${input.period_end}`,
           radarType,
@@ -200,6 +206,12 @@ export function reportRoutes(ctx: AppContext): Hono {
           opportunityCount: opportunities.length,
         });
         ctx.reportStore.save();
+
+        // V1.5 评审v2 新增：回写 RadarRun.reportId（当 body.run_id 存在时）
+        if (body.run_id && ctx.radarRunStore) {
+          ctx.radarRunStore.update(body.run_id, { reportId: meta.id });
+          ctx.radarRunStore.save();
+        }
       }
 
       // 返回文件

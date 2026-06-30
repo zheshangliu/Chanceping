@@ -100,6 +100,8 @@ export interface ReportGenerateRequest {
   period_end?: string;
   /** V1.5-08 新增：关联到具体雷达（可选，不传则不写入 ReportStore） */
   radar_id?: string;
+  /** V1.5 评审v2 新增：关联到具体运行记录（可选，传入时回写 RadarRun.reportId） */
+  run_id?: string;
 }
 
 /** 机会库添加请求 */

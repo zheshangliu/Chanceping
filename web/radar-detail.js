@@ -382,7 +382,11 @@
       </div>
       <div class="card-meta">
         <span class="card-source">${escapeHtml(source)}</span>
-        ${opp.radarId ? `<span class="card-radar-tag">radarId: ${escapeHtml(opp.radarId)}</span>` : ""}
+        ${(() => {
+          // V1.5 评审v2：同时检查 radarId（旧字段）和 radarIds（多雷达归属）
+          const ids = opp.radarIds || (opp.radarId ? [opp.radarId] : []);
+          return ids.length > 0 ? `<span class="card-radar-tag">雷达: ${escapeHtml(ids.join(", "))}</span>` : "";
+        })()}
       </div>
       ${reason ? `<div class="card-reason">💡 ${escapeHtml(reason)}</div>` : ""}
       <div class="card-total-score">ChanceScore: ${totalScore}分</div>
