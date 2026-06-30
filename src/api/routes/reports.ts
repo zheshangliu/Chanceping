@@ -74,6 +74,60 @@ function createDefaultSpec(): RadarRequirementSpec {
   };
 }
 
+/**
+ * V1.6-03 强校验：解析 effectiveRadarId 并校验 run_id 与 radar_id 一致性。
+ *
+ * 校验规则：
+ *   1. 只传 run_id → 从 RadarRun 反查 radarId 作为 effectiveRadarId
+ *   2. 只传 radar_id → effectiveRadarId = radar_id，不校验 run_id
+ *   3. 同时传 → 校验 run.radarId === radar_id，不一致返回 400
+ *   4. 传不存在的 run_id → 返回 400
+ *   5. 都不传 → 返回 { effectiveRadarId: undefined }（向后兼容，不创建 ReportMeta）
+ *
+ * @param body 请求体（含 radar_id / run_id）
+ * @param ctx 应用上下文
+ * @param durationMs 已耗时（用于错误响应）
+ * @returns 成功时 { effectiveRadarId }；失败时 { errorBody, status }
+ */
+function resolveRadarIdFromRun(
+  body: { radar_id?: string; run_id?: string },
+  ctx: AppContext,
+  durationMs: number,
+): { effectiveRadarId: string | undefined } | { errorBody: ApiResponse; status: 400 } {
+  let effectiveRadarId = body.radar_id;
+
+  if (body.run_id && ctx.radarRunStore) {
+    const run = ctx.radarRunStore.get(body.run_id);
+    if (!run) {
+      return {
+        errorBody: {
+          success: false, data: null,
+          error: { code: "BAD_REQUEST", message: `run_id ${body.run_id} 不存在` },
+          duration_ms: durationMs,
+        },
+        status: 400,
+      };
+    }
+    // 同时传了 radar_id，校验一致
+    if (body.radar_id && run.radarId !== body.radar_id) {
+      return {
+        errorBody: {
+          success: false, data: null,
+          error: { code: "BAD_REQUEST", message: `radar_id(${body.radar_id}) 与 run_id(${body.run_id}) 关联的 radarId(${run.radarId}) 不一致` },
+          duration_ms: durationMs,
+        },
+        status: 400,
+      };
+    }
+    // 只传 run_id，从 RadarRun 反查 radarId
+    if (!body.radar_id) {
+      effectiveRadarId = run.radarId;
+    }
+  }
+
+  return { effectiveRadarId };
+}
+
 export function reportRoutes(ctx: AppContext): Hono {
   const app = new Hono();
 
@@ -109,6 +163,13 @@ export function reportRoutes(ctx: AppContext): Hono {
       const periodEnd = body.period_end ?? today.toISOString().split("T")[0];
       const periodStart = body.period_start ?? new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
 
+      // V1.6-03 强校验：解析 effectiveRadarId + 校验 run_id 一致性（校验失败时不生成报告，避免孤立文件）
+      const resolved = resolveRadarIdFromRun(body, ctx, Date.now() - start);
+      if ("errorBody" in resolved) {
+        return c.json(resolved.errorBody, resolved.status);
+      }
+      const effectiveRadarId = resolved.effectiveRadarId;
+
       const input: RadarReportInput = {
         spec, opportunities, radar_type: radarType,
         period_start: periodStart, period_end: periodEnd,
@@ -127,10 +188,10 @@ export function reportRoutes(ctx: AppContext): Hono {
         savedFilename = filename;
       }
 
-      // V1.5-08 新增：写入报告元数据（仅当 body.radar_id 存在时）
-      if (result.success && savedFilename && body.radar_id) {
+      // V1.5-08 + V1.6-03：写入报告元数据（当 effectiveRadarId 存在时）
+      if (result.success && savedFilename && effectiveRadarId) {
         const meta = ctx.reportStore.create({
-          radarId: body.radar_id,
+          radarId: effectiveRadarId,
           title: `${radarType} 报告 ${periodStart} ~ ${periodEnd}`,
           radarType,
           format: "markdown",
@@ -142,7 +203,7 @@ export function reportRoutes(ctx: AppContext): Hono {
         ctx.reportStore.save();
         (result as { reportId?: string }).reportId = meta.id;
 
-        // V1.5 评审v2 新增：回写 RadarRun.reportId（当 body.run_id 存在时）
+        // V1.6-03：回写 RadarRun.reportId（只要 body.run_id 存在且 RadarRun 存在就回写，不依赖 radar_id）
         if (body.run_id && ctx.radarRunStore) {
           ctx.radarRunStore.update(body.run_id, { reportId: meta.id });
           ctx.radarRunStore.save();
@@ -171,6 +232,13 @@ export function reportRoutes(ctx: AppContext): Hono {
       const opportunities = (body.opportunities as OpportunityCard[]) ?? [];
       const radarType = body.radar_type ?? "ai_competition";
       const today = new Date();
+      // V1.6-03 强校验：解析 effectiveRadarId + 校验 run_id 一致性（校验失败时不生成报告，避免孤立文件）
+      const resolved = resolveRadarIdFromRun(body, ctx, Date.now() - start);
+      if ("errorBody" in resolved) {
+        return c.json(resolved.errorBody, resolved.status);
+      }
+      const effectiveRadarId = resolved.effectiveRadarId;
+
       const input: RadarReportInput = {
         spec,
         opportunities,
@@ -193,10 +261,10 @@ export function reportRoutes(ctx: AppContext): Hono {
       }
       fs.writeFileSync(path.join(exportDir, exported.filename), exported.content);
 
-      // V1.5-08 新增：写入报告元数据（仅当 body.radar_id 存在时）
-      if (body.radar_id) {
+      // V1.5-08 + V1.6-03：写入报告元数据（当 effectiveRadarId 存在时）
+      if (effectiveRadarId) {
         const meta = ctx.reportStore.create({
-          radarId: body.radar_id,
+          radarId: effectiveRadarId,
           title: `${radarType} 导出报告 ${input.period_start} ~ ${input.period_end}`,
           radarType,
           format,
@@ -207,7 +275,7 @@ export function reportRoutes(ctx: AppContext): Hono {
         });
         ctx.reportStore.save();
 
-        // V1.5 评审v2 新增：回写 RadarRun.reportId（当 body.run_id 存在时）
+        // V1.6-03：回写 RadarRun.reportId（只要 body.run_id 存在且 RadarRun 存在就回写，不依赖 radar_id）
         if (body.run_id && ctx.radarRunStore) {
           ctx.radarRunStore.update(body.run_id, { reportId: meta.id });
           ctx.radarRunStore.save();
