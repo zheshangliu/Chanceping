@@ -195,7 +195,7 @@ async function main(): Promise<void> {
   // ============================================================
   console.log("\n[验收 4] presets.ts 预设模板\n");
   {
-    check("PRESET_TEMPLATES 含 5 个模板", PRESET_TEMPLATES.length === 5);
+    check("PRESET_TEMPLATES 含 6 个模板", PRESET_TEMPLATES.length === 6);
     check("含 daily_morning", getPresetById("daily_morning") !== undefined);
     check("含 weekly_report", getPresetById("weekly_report") !== undefined);
     check("含 deadline_alert", getPresetById("deadline_alert") !== undefined);
@@ -229,7 +229,7 @@ async function main(): Promise<void> {
       cm?.periods.map((p) => p.time).join(",") === "08:00,12:00,16:00,20:00");
 
     // listPresets
-    check("listPresets() 返回 5 个", listPresets().length === 5);
+    check("listPresets() 返回 6 个", listPresets().length === 6);
 
     // 不存在的 ID
     check("getPresetById(unknown) = undefined", getPresetById("unknown") === undefined);
