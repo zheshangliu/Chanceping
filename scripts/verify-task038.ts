@@ -96,19 +96,19 @@ function checkHtmlStructure(): void {
 
   // Tab 顺序检查
   const tabBtnMatches = html.match(/data-tab="([^"]+)"/g) || [];
-  check("T5 含 6 个 tab-btn", tabBtnMatches.length === 6, `实际: ${tabBtnMatches.length}`);
-  if (tabBtnMatches.length === 6) {
+  check("T5 含 7 个 tab-btn", tabBtnMatches.length === 7, `实际: ${tabBtnMatches.length}`);
+  if (tabBtnMatches.length === 7) {
     const tabs = tabBtnMatches.map((m) => m.match(/data-tab="([^"]+)"/)![1]);
     check("T5.1 Tab 顺序首位是 home", tabs[0] === "home", `实际: ${tabs[0]}`);
-    check("T5.2 Tab 顺序末位是 editor", tabs[5] === "editor", `实际: ${tabs[5]}`);
-    check("T5.3 Tab 顺序: home/chat/search/opportunities/reports/editor",
-      tabs.join("/") === "home/chat/search/opportunities/reports/editor",
+    check("T5.2 Tab 顺序末位是 editor", tabs[6] === "editor", `实际: ${tabs[6]}`);
+    check("T5.3 Tab 顺序: home/chat/search/opportunities/reports/radars/editor",
+      tabs.join("/") === "home/chat/search/opportunities/reports/radars/editor",
       `实际: ${tabs.join("/")}`);
   }
 
   // panel 顺序检查
   const panelMatches = html.match(/id="panel-([^"]+)"/g) || [];
-  check("含 6 个 tab-panel", panelMatches.length === 6, `实际: ${panelMatches.length}`);
+  check("含 7 个 tab-panel", panelMatches.length === 7, `实际: ${panelMatches.length}`);
 
   // 首页是 active
   check("T5.4 首页 panel-home 含 active 类", html.includes('id="panel-home"') && html.includes('tab-panel active'));
@@ -195,7 +195,7 @@ async function checkApiIntegration(): Promise<void> {
     check("GET / 返回 200", resHome.status === 200, `status=${resHome.status}`);
     check("GET / 含 panel-home", htmlContent.includes('id="panel-home"'));
     check("GET / 含 panel-chat", htmlContent.includes('id="panel-chat"'));
-    check("GET / 含 6 个 tab-btn", (htmlContent.match(/data-tab="/g) || []).length === 6);
+    check("GET / 含 7 个 tab-btn", (htmlContent.match(/data-tab="/g) || []).length === 7);
 
     // GET /home.js
     const resHomeJs = await fetch(`http://localhost:${port}/home.js`);
