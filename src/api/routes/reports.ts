@@ -253,8 +253,11 @@ export function reportRoutes(ctx: AppContext): Hono {
   app.get("/export/:filename", (c) => {
     const start = Date.now();
     const filename = c.req.param("filename");
-    const filePath = path.resolve(process.cwd(), "reports", "export", filename);
-    if (!fs.existsSync(filePath)) {
+    // 优先查 reports/export/，找不到再查 reports/api/（/generate 产出的报告存于此）
+    const exportPath = path.resolve(process.cwd(), "reports", "export", filename);
+    const apiPath = path.resolve(process.cwd(), "reports", "api", filename);
+    const filePath = fs.existsSync(exportPath) ? exportPath : fs.existsSync(apiPath) ? apiPath : null;
+    if (!filePath) {
       return c.json({ success: false, data: null, error: { code: "NOT_FOUND", message: "文件不存在" }, duration_ms: Date.now() - start } satisfies ApiResponse, 404);
     }
     const content = fs.readFileSync(filePath);
