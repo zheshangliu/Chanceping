@@ -21,6 +21,7 @@ import { StarManager } from "../src/agents/star-manager";
 import { LocalWatchStore } from "../src/watch/watch-store";
 import { JsonRadarStore, JsonRadarRunStore } from "../src/agents/radar-store";
 import { RadarRegistry } from "../src/agents/radar-registry";
+import { JsonReportStore } from "../src/agents/report-store";
 import type { ApiResponse } from "../src/api/types";
 import { RADAR_QUOTA, getCurrentUser } from "../src/agents/user-context";
 import { RadarQuotaChecker } from "../src/agents/radar-quota";
@@ -87,6 +88,7 @@ function createTestContext(): AppContext {
   const radarRunStore = new JsonRadarRunStore({ file_path: TEMP_RUNS_FILE });
   const radarRegistry = new RadarRegistry(radarStore);
   radarRegistry.initialize();
+  const reportStore = new JsonReportStore();
 
   return {
     llmAdapter: modelRouter,
@@ -97,6 +99,7 @@ function createTestContext(): AppContext {
     radarStore,
     radarRunStore,
     radarRegistry,
+    reportStore,
   };
 }
 

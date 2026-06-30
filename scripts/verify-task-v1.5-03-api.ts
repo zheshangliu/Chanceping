@@ -29,6 +29,7 @@ import { StarManager } from "../src/agents/star-manager";
 import { LocalWatchStore } from "../src/watch/watch-store";
 import { JsonRadarStore, JsonRadarRunStore } from "../src/agents/radar-store";
 import { RadarRegistry } from "../src/agents/radar-registry";
+import { JsonReportStore } from "../src/agents/report-store";
 import type { ApiResponse } from "../src/api/types";
 
 // ============================================================
@@ -93,6 +94,7 @@ function createTestContext(): AppContext {
   const radarRunStore = new JsonRadarRunStore({ file_path: TEMP_RUNS_FILE });
   const radarRegistry = new RadarRegistry(radarStore);
   radarRegistry.initialize(); // 初始化 3 个内置雷达
+  const reportStore = new JsonReportStore();
 
   return {
     llmAdapter: modelRouter,
@@ -103,6 +105,7 @@ function createTestContext(): AppContext {
     radarStore,
     radarRunStore,
     radarRegistry,
+    reportStore,
   };
 }
 

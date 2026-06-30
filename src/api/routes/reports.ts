@@ -11,6 +11,7 @@ import { exportReport } from "../../export/report-exporter";
 import type { ExportFormat } from "../../export/report-exporter";
 import { exportReview } from "../../export/review-exporter";
 import { generateReview } from "../../agents/opportunity-review";
+import type { ReportMeta } from "../../agents/report-store";
 
 /** 默认高确认度 spec（用于 API 报告生成） */
 function createDefaultSpec(): RadarRequirementSpec {
@@ -76,6 +77,21 @@ function createDefaultSpec(): RadarRequirementSpec {
 export function reportRoutes(ctx: AppContext): Hono {
   const app = new Hono();
 
+  // GET / - 列出报告元数据（V1.5-08 新增，支持 ?radar_id=xxx 过滤）
+  app.get("/", (c) => {
+    const start = Date.now();
+    const radarId = c.req.query("radar_id");
+    const reports = radarId
+      ? ctx.reportStore.listByRadarId(radarId)
+      : ctx.reportStore.list();
+    return c.json({
+      success: true,
+      data: reports,
+      error: null,
+      duration_ms: Date.now() - start,
+    } satisfies ApiResponse<ReportMeta[]>);
+  });
+
   // POST /generate - 生成报告
   app.post("/generate", async (c) => {
     const start = Date.now();
@@ -100,6 +116,7 @@ export function reportRoutes(ctx: AppContext): Hono {
       const result = generateRadarReport(input);
 
       // 保存报告到文件
+      let savedFilename: string | undefined;
       if (result.success && result.markdown) {
         const reportsDir = path.resolve(process.cwd(), "reports/api");
         if (!fs.existsSync(reportsDir)) {
@@ -107,6 +124,23 @@ export function reportRoutes(ctx: AppContext): Hono {
         }
         const filename = `report-${radarType}-${today.toISOString().replace(/[:.]/g, "-")}.md`;
         fs.writeFileSync(path.join(reportsDir, filename), result.markdown, "utf-8");
+        savedFilename = filename;
+      }
+
+      // V1.5-08 新增：写入报告元数据（仅当 body.radar_id 存在时）
+      if (result.success && savedFilename && body.radar_id) {
+        const meta = ctx.reportStore.create({
+          radarId: body.radar_id,
+          title: `${radarType} 报告 ${periodStart} ~ ${periodEnd}`,
+          radarType,
+          format: "markdown",
+          filename: savedFilename,
+          periodStart,
+          periodEnd,
+          opportunityCount: opportunities.length,
+        });
+        ctx.reportStore.save();
+        (result as { reportId?: string }).reportId = meta.id;
       }
 
       return c.json({ success: result.success, data: result, error: result.error ? { code: "REPORT_ERROR", message: result.error } : null, duration_ms: Date.now() - start } satisfies ApiResponse);
@@ -152,6 +186,21 @@ export function reportRoutes(ctx: AppContext): Hono {
         fs.mkdirSync(exportDir, { recursive: true });
       }
       fs.writeFileSync(path.join(exportDir, exported.filename), exported.content);
+
+      // V1.5-08 新增：写入报告元数据（仅当 body.radar_id 存在时）
+      if (body.radar_id) {
+        ctx.reportStore.create({
+          radarId: body.radar_id,
+          title: `${radarType} 导出报告 ${input.period_start} ~ ${input.period_end}`,
+          radarType,
+          format,
+          filename: exported.filename,
+          periodStart: input.period_start,
+          periodEnd: input.period_end,
+          opportunityCount: opportunities.length,
+        });
+        ctx.reportStore.save();
+      }
 
       // 返回文件
       c.header("Content-Disposition", `attachment; filename="${exported.filename}"`);

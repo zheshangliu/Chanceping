@@ -219,10 +219,18 @@
             <p class="placeholder">${radar.lastRunAt ? `最后运行：${escapeHtml(formatTime(radar.lastRunAt))} (${escapeHtml(radar.lastRunStatus || "—")})` : "暂无运行记录"}</p>
           </div>
         </div>
+
+        <div class="radar-detail-section radar-report-history">
+          <h4>历史报告</h4>
+          <div id="radar-report-history-list">
+            <p class="placeholder">加载中...</p>
+          </div>
+        </div>
       </div>
     `;
 
     bindDetailEvents(radar);
+    loadReportHistory(radar.id);
   }
 
   /** 绑定详情页按钮事件 */
@@ -411,6 +419,59 @@
   }
 
   // ============================================================
+  // 历史报告（V1.5-08 新增）
+  // ============================================================
+
+  /**
+   * 加载雷达的历史报告（GET /api/reports?radar_id=xxx）。
+   * @param {string} radarId - 雷达 ID
+   */
+  async function loadReportHistory(radarId) {
+    const container = document.getElementById("radar-report-history-list");
+    if (!container) return;
+    container.innerHTML = '<p class="placeholder">加载中...</p>';
+    try {
+      const res = await fetch(`/api/reports?radar_id=${encodeURIComponent(radarId)}`);
+      const json = await res.json();
+      if (json.success && Array.isArray(json.data)) {
+        renderReportList(json.data);
+      } else {
+        container.innerHTML = '<p class="placeholder">暂无历史报告</p>';
+      }
+    } catch (err) {
+      container.innerHTML = '<p class="placeholder">加载历史报告失败</p>';
+    }
+  }
+
+  /**
+   * 渲染历史报告列表（表格形式）。
+   * @param {Array} reports - ReportMeta[]
+   */
+  function renderReportList(reports) {
+    const container = document.getElementById("radar-report-history-list");
+    if (!container) return;
+    if (!reports || reports.length === 0) {
+      container.innerHTML = '<p class="placeholder">暂无历史报告</p>';
+      return;
+    }
+    const rows = reports.map((r) => `
+      <tr>
+        <td>${escapeHtml(r.title || "—")}</td>
+        <td>${escapeHtml(r.periodStart || "—")} ~ ${escapeHtml(r.periodEnd || "—")}</td>
+        <td>${r.opportunityCount ?? 0}</td>
+        <td>${escapeHtml(formatTime(r.createdAt))}</td>
+        <td><a href="/api/reports/export/${encodeURIComponent(r.filename)}" target="_blank">下载</a></td>
+      </tr>
+    `).join("");
+    container.innerHTML = `
+      <table class="report-history-table">
+        <thead><tr><th>标题</th><th>周期</th><th>机会数</th><th>创建时间</th><th>操作</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+  }
+
+  // ============================================================
   // 暴露到全局
   // ============================================================
 
@@ -419,4 +480,6 @@
   window.activateRadar = activateRadar;
   window.runRadar = runRadar;
   window.renderRunResult = renderRunResult;
+  window.loadReportHistory = loadReportHistory;
+  window.renderReportList = renderReportList;
 })();

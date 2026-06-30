@@ -17,6 +17,7 @@ import { StarManager } from "../src/agents/star-manager";
 import { LocalWatchStore } from "../src/watch/watch-store";
 import { JsonRadarStore, JsonRadarRunStore } from "../src/agents/radar-store";
 import { RadarRegistry } from "../src/agents/radar-registry";
+import { JsonReportStore } from "../src/agents/report-store";
 import type { OpportunityCard } from "../src/schema/opportunity-card";
 import type { ApiResponse } from "../src/api/types";
 
@@ -90,6 +91,7 @@ function createTestContext(): AppContext {
   const radarRunStore = new JsonRadarRunStore();
   const radarRegistry = new RadarRegistry(radarStore);
   radarRegistry.initialize();
+  const reportStore = new JsonReportStore();
 
   return {
     llmAdapter: modelRouter,
@@ -100,6 +102,7 @@ function createTestContext(): AppContext {
     radarStore,
     radarRunStore,
     radarRegistry,
+    reportStore,
   };
 }
 

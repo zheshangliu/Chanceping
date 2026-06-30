@@ -96,6 +96,8 @@ export interface ReportGenerateRequest {
   period_start?: string;
   /** 报告周期结束日期（YYYY-MM-DD，可选，默认今天） */
   period_end?: string;
+  /** V1.5-08 新增：关联到具体雷达（可选，不传则不写入 ReportStore） */
+  radar_id?: string;
 }
 
 /** 机会库添加请求 */

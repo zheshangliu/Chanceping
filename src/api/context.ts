@@ -19,6 +19,8 @@ import { FileParserRouter } from "../search/file-parser-router";
 import { JsonRadarStore, JsonRadarRunStore } from "../agents/radar-store";
 import type { RadarStore, RadarRunStore } from "../agents/radar-store";
 import { RadarRegistry } from "../agents/radar-registry";
+import { JsonReportStore } from "../agents/report-store";
+import type { ReportStore } from "../agents/report-store";
 
 /** 会话池中的条目 */
 interface ConversationEntry {
@@ -46,6 +48,8 @@ export interface AppContext {
   radarRunStore: RadarRunStore;
   /** V1.5 新增：雷达注册表（单例） */
   radarRegistry: RadarRegistry;
+  /** V1.5-08 新增：报告元数据存储 */
+  reportStore: ReportStore;
 }
 
 /**
@@ -68,6 +72,9 @@ export function createAppContext(): AppContext {
   const radarRegistry = new RadarRegistry(radarStore);
   radarRegistry.initialize(); // 初始化 3 个内置雷达
 
+  // V1.5-08 新增：报告元数据存储（构造时自动 load）
+  const reportStore = new JsonReportStore();
+
   return {
     llmAdapter,
     store,
@@ -78,5 +85,6 @@ export function createAppContext(): AppContext {
     radarStore,
     radarRunStore,
     radarRegistry,
+    reportStore,
   };
 }
