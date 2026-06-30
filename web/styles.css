@@ -2837,3 +2837,99 @@ textarea {
   gap: 12px;
   justify-content: flex-end;
 }
+
+/* ============================================================
+ * V1.6-05 定时设置区
+ * ============================================================ */
+
+.radar-schedule-section {
+  margin-top: 16px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background-color: var(--bg-secondary);
+}
+
+.schedule-status {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 12px;
+  font-size: 13px;
+}
+
+.schedule-enabled.active {
+  color: var(--success);
+  font-weight: 600;
+}
+
+.schedule-enabled.inactive {
+  color: var(--text-secondary);
+}
+
+.schedule-next {
+  color: var(--text-secondary);
+}
+
+.schedule-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-end;
+}
+
+.schedule-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.schedule-field select,
+.schedule-field input[type="time"] {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.weekday-picker {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.weekday-btn {
+  padding: 4px 8px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  cursor: pointer;
+  font-size: 12px;
+  min-width: 28px;
+}
+
+.weekday-btn:hover {
+  border-color: var(--accent);
+}
+
+.weekday-btn.selected {
+  background-color: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.weekday-btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.schedule-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}

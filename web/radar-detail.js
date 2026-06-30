@@ -208,6 +208,8 @@
           </div>
         </div>
 
+        ${renderScheduleSection(radar)}
+
         <div class="radar-detail-section radar-run-result" id="radar-run-result-section" style="display:none;">
           <h4>本次运行结果</h4>
           <div id="radar-run-result-list"></div>
@@ -261,6 +263,168 @@
     if (archiveBtn) archiveBtn.addEventListener("click", () => {
       if (!archiveBtn.disabled) archiveRadar(radar.id);
     });
+
+    // V1.6-05:定时设置区事件绑定
+    bindScheduleEvents(radar);
+  }
+
+  // ============================================================
+  // 定时设置（V1.6-05 新增）
+  // ============================================================
+
+  /**
+   * 渲染定时设置区 HTML。
+   * @param {Object} radar - Radar
+   * @returns {string} HTML 字符串
+   */
+  function renderScheduleSection(radar) {
+    const schedule = radar.schedule;
+    const enabled = schedule?.enabled ?? false;
+    const nextRun = schedule?.nextRunAt ? formatTime(schedule.nextRunAt) : "未设置";
+    const frequency = schedule?.frequency ?? "daily";
+    const time = schedule?.time ?? "08:00";
+    const timezone = schedule?.timezone ?? "Asia/Shanghai";
+    const weekdays = schedule?.weekdays ?? [];
+    // 仅 active/paused 可设置定时(draft 不允许,archived 不允许)
+    const canEdit = radar.status === "active" || radar.status === "paused";
+
+    const weekdayButtons = [1, 2, 3, 4, 5, 6, 7]
+      .map(
+        (day) =>
+          `<button type="button" class="weekday-btn ${weekdays.includes(day) ? "selected" : ""}" data-day="${day}">${["", "一", "二", "三", "四", "五", "六", "日"][day]}</button>`,
+      )
+      .join("");
+
+    return `
+      <div class="radar-detail-section radar-schedule-section">
+        <h4>定时运行</h4>
+        <div class="schedule-status">
+          <span class="schedule-enabled ${enabled ? "active" : "inactive"}">${enabled ? "已启用" : "未启用"}</span>
+          <span class="schedule-next">下次执行: ${escapeHtml(nextRun)}</span>
+        </div>
+        <div class="schedule-form" id="schedule-form">
+          <label class="schedule-field">频率:
+            <select id="schedule-frequency" ${!canEdit ? "disabled" : ""}>
+              <option value="daily" ${frequency === "daily" ? "selected" : ""}>每天</option>
+              <option value="weekly" ${frequency === "weekly" ? "selected" : ""}>每周</option>
+            </select>
+          </label>
+          <label class="schedule-field">时间:
+            <input type="time" id="schedule-time" value="${escapeHtml(time)}" ${!canEdit ? "disabled" : ""}>
+          </label>
+          <div id="weekday-picker" class="weekday-picker" style="display:${frequency === "weekly" ? "flex" : "none"};">
+            <label class="schedule-field">周几:</label>
+            ${weekdayButtons}
+          </div>
+          <label class="schedule-field">时区:
+            <select id="schedule-timezone" ${!canEdit ? "disabled" : ""}>
+              <option value="Asia/Shanghai" ${timezone === "Asia/Shanghai" ? "selected" : ""}>北京</option>
+              <option value="Asia/Tokyo" ${timezone === "Asia/Tokyo" ? "selected" : ""}>东京</option>
+              <option value="Asia/Hong_Kong" ${timezone === "Asia/Hong_Kong" ? "selected" : ""}>香港</option>
+            </select>
+          </label>
+          <div class="schedule-actions">
+            <button type="button" class="btn-primary" id="btn-save-schedule" ${!canEdit ? "disabled" : ""}>保存定时</button>
+            <button type="button" class="btn-archive" id="btn-delete-schedule" ${!canEdit || !enabled ? "disabled" : ""}>清除定时</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * 绑定定时设置区事件。
+   * @param {Object} radar - Radar
+   */
+  function bindScheduleEvents(radar) {
+    const freqSelect = document.getElementById("schedule-frequency");
+    const weekdayPicker = document.getElementById("weekday-picker");
+    if (freqSelect && weekdayPicker) {
+      freqSelect.addEventListener("change", () => {
+        weekdayPicker.style.display = freqSelect.value === "weekly" ? "flex" : "none";
+      });
+    }
+
+    // 周几按钮切换
+    const weekdayBtns = document.querySelectorAll(".weekday-btn");
+    weekdayBtns.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        if (btn.disabled) return;
+        btn.classList.toggle("selected");
+      });
+    });
+
+    const saveBtn = document.getElementById("btn-save-schedule");
+    if (saveBtn) saveBtn.addEventListener("click", () => {
+      if (!saveBtn.disabled) saveSchedule(radar.id);
+    });
+
+    const deleteBtn = document.getElementById("btn-delete-schedule");
+    if (deleteBtn) deleteBtn.addEventListener("click", () => {
+      if (!deleteBtn.disabled) deleteSchedule(radar.id);
+    });
+  }
+
+  /**
+   * 保存定时（PUT /api/radars/:id/schedule）。
+   * @param {string} radarId - 雷达 ID
+   */
+  async function saveSchedule(radarId) {
+    if (!radarId) return;
+    const frequency = document.getElementById("schedule-frequency")?.value ?? "daily";
+    const time = document.getElementById("schedule-time")?.value ?? "08:00";
+    const timezone = document.getElementById("schedule-timezone")?.value ?? "Asia/Shanghai";
+    const weekdays =
+      frequency === "weekly"
+        ? [...document.querySelectorAll(".weekday-btn.selected")].map((b) => parseInt(b.dataset.day, 10))
+        : undefined;
+
+    if (frequency === "weekly" && (!weekdays || weekdays.length === 0)) {
+      if (window.showToast) showToast("每周定时至少选择一个工作日", "warning");
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/radars/${encodeURIComponent(radarId)}/schedule`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ time, frequency, weekdays, timezone, enabled: true }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        if (window.showToast) showToast("定时已保存", "success");
+        loadRadarDetail(radarId);
+      } else {
+        const msg = json.error?.message || "保存失败";
+        if (window.showToast) showToast(`定时保存失败：${msg}`, "error");
+      }
+    } catch (err) {
+      if (window.showToast) showToast("定时保存失败：网络错误", "error");
+    }
+  }
+
+  /**
+   * 清除定时（DELETE /api/radars/:id/schedule）。
+   * @param {string} radarId - 雷达 ID
+   */
+  async function deleteSchedule(radarId) {
+    if (!radarId) return;
+    if (!confirm("确认清除定时配置？")) return;
+    try {
+      const res = await fetch(`/api/radars/${encodeURIComponent(radarId)}/schedule`, {
+        method: "DELETE",
+      });
+      const json = await res.json();
+      if (json.success) {
+        if (window.showToast) showToast("定时已清除", "success");
+        loadRadarDetail(radarId);
+      } else {
+        const msg = json.error?.message || "清除失败";
+        if (window.showToast) showToast(`定时清除失败：${msg}`, "error");
+      }
+    } catch (err) {
+      if (window.showToast) showToast("定时清除失败：网络错误", "error");
+    }
   }
 
   // ============================================================
