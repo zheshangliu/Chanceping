@@ -306,6 +306,12 @@ export class JsonRadarStore implements RadarStore {
       const data = JSON.parse(raw) as RadarStoreFile;
       if (data.radars && Array.isArray(data.radars)) {
         for (const radar of data.radars) {
+          // V1.6-02 兼容：旧 cron 格式降级为 HH:MM
+          if (radar.schedule && (radar.schedule as { cron?: string }).cron) {
+            radar.schedule = normalizeLegacySchedule(
+              radar.schedule as unknown as { cron: string; timezone: string; enabled: boolean },
+            );
+          }
           this.radars.set(radar.id, radar);
         }
       }
@@ -314,6 +320,36 @@ export class JsonRadarStore implements RadarStore {
       this.radars.clear();
     }
   }
+}
+
+/**
+ * V1.6-02 内部：旧 cron schedule 降级为 HH:MM schedule。
+ *
+ * 解析 cron "m h * * *" → time "HH:MM"，frequency 默认 daily。
+ * 复杂 cron（含步进/范围/列表）降级为 "08:00" daily，保留 enabled。
+ */
+function normalizeLegacySchedule(legacy: {
+  cron: string;
+  timezone: string;
+  enabled: boolean;
+}): RadarSchedule {
+  const parts = legacy.cron.trim().split(/\s+/);
+  // 仅处理简单 "m h * * *" 格式，复杂 cron 兜底为 08:00
+  const isSimple = parts.length === 5
+    && /^\d+$/.test(parts[0])
+    && /^\d+$/.test(parts[1])
+    && parts[2] === "*"
+    && parts[3] === "*"
+    && parts[4] === "*";
+  const minute = isSimple ? parts[0] : "0";
+  const hour = isSimple ? parts[1] : "8";
+  const time = `${hour.padStart(2, "0")}:${minute.padStart(2, "0")}`;
+  return {
+    time,
+    frequency: "daily",
+    timezone: legacy.timezone,
+    enabled: legacy.enabled,
+  };
 }
 
 // ============================================================

@@ -43,112 +43,50 @@ function errorResponse(code: string, message: string, durationMs: number, status
 }
 
 // ============================================================
-// V1.5-06 cron 校验与 nextRunAt 计算（导出供 triggers.ts / 验收脚本复用）
+// V1.6-02 HH:MM 校验与 nextRunAt 计算（替代 V1.5-06 的 cron 实现）
 // ============================================================
 
 /**
- * V1.5-06：cron 表达式校验（5 字段 unix 格式）。
+ * V1.6-02：验证 HH:MM 时间格式。
  *
- * 支持 `*` / 数字 / `* / n`（步进）/ `a-b` / `a,b` 组合。
- *
- * @param cron cron 表达式
- * @returns 校验结果（valid=false 时含 error）
+ * @param time 时间字符串（如 "08:00"）
+ * @returns true=合法，false=非法
  */
-export function validateCron(cron: string): { valid: boolean; error?: string } {
-  const fields = cron.trim().split(/\s+/);
-  if (fields.length !== 5) {
-    return { valid: false, error: "cron 必须为 5 字段格式（分 时 日 月 周）" };
-  }
-  const ranges = [
-    { min: 0, max: 59 },  // 分钟
-    { min: 0, max: 23 },  // 小时
-    { min: 1, max: 31 },  // 日
-    { min: 1, max: 12 },  // 月
-    { min: 0, max: 7 },   // 周（0 和 7 都表示周日）
-  ];
-  for (let i = 0; i < 5; i++) {
-    if (!validateCronField(fields[i], ranges[i].min, ranges[i].max)) {
-      return { valid: false, error: `cron 字段 ${i + 1}（"${fields[i]}"）格式或范围非法` };
-    }
-  }
-  return { valid: true };
-}
-
-/** 校验单个 cron 字段（支持 * / 数字 / 步进 n / a-b / a,b 组合） */
-function validateCronField(field: string, min: number, max: number): boolean {
-  if (field === "*") return true;
-  for (const part of field.split(",")) {
-    if (part.startsWith("*/")) {
-      const n = Number(part.slice(2));
-      if (!Number.isInteger(n) || n < 1 || n > max) return false;
-    } else if (part.includes("-")) {
-      const [a, b] = part.split("-").map(Number);
-      if (!Number.isInteger(a) || !Number.isInteger(b) || a < min || b > max || a > b) return false;
-    } else {
-      const n = Number(part);
-      if (!Number.isInteger(n) || n < min || n > max) return false;
-    }
-  }
-  return true;
+export function validateScheduleTime(time: string): boolean {
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(time);
 }
 
 /**
- * V1.5-06：计算下次执行时间。
+ * V1.6-02：计算下次执行时间（基于 HH:MM + frequency + weekdays）。
  *
- * 简化实现：从 from 的下一分钟开始，逐分钟遍历未来 7 天，
- * 找到第一个匹配 cron 5 字段的时刻。timezone 参数保留接口（当前用本地时间匹配）。
+ * 简化实现：
+ *   1. 从 from 当天的 time 时刻开始，若已过则从次日同时刻开始
+ *   2. weekly 模式下，向后查找直到 weekday 匹配（最多 7 天）
+ *   3. timezone 参数保留接口（当前用本地时间匹配，V1.6b 可补 timezone-aware）
  *
- * @param cron cron 表达式
- * @param timezone 时区（IANA 格式）
+ * @param schedule 定时配置（含 time/frequency/weekdays）
  * @param from 起始时间（默认当前时间）
  * @returns 下次执行时间（ISO 8601）
  */
-export function computeNextRunAt(cron: string, timezone: string, from: Date = new Date()): string {
-  const fields = cron.trim().split(/\s+/);
-  const minuteField = fields[0];
-  const hourField = fields[1];
-  const dayField = fields[2];
-  const monthField = fields[3];
-  const dowField = fields[4];
-  // 从下一分钟开始，秒/毫秒清零
-  const start = new Date(from.getTime() + 60 * 1000);
-  start.setSeconds(0, 0);
-  // 最多遍历 7 天（7 * 24 * 60 = 10080 分钟）
-  for (let i = 0; i < 7 * 24 * 60; i++) {
-    const candidate = new Date(start.getTime() + i * 60 * 1000);
-    if (
-      matchCronField(minuteField, candidate.getMinutes(), 0, 59) &&
-      matchCronField(hourField, candidate.getHours(), 0, 23) &&
-      matchCronField(dayField, candidate.getDate(), 1, 31) &&
-      matchCronField(monthField, candidate.getMonth() + 1, 1, 12) &&
-      matchCronField(dowField, candidate.getDay(), 0, 7)
-    ) {
-      return candidate.toISOString();
+export function computeNextRunAt(schedule: RadarSchedule, from: Date = new Date()): string {
+  const now = from;
+  const [hour, minute] = schedule.time.split(":").map(Number);
+  let next = new Date(now);
+  next.setHours(hour, minute, 0, 0);
+  // 若当日 time 已过，从次日同时刻开始
+  if (next <= now) {
+    next.setDate(next.getDate() + 1);
+  }
+  // weekly 模式：向后查找直到 weekday 匹配
+  if (schedule.frequency === "weekly" && schedule.weekdays && schedule.weekdays.length > 0) {
+    for (let i = 0; i < 8; i++) {
+      // JS getDay(): 0=周日, 1=周一...6=周六；本接口约定 1-7=周一到周日，周日=7
+      const dow = next.getDay() === 0 ? 7 : next.getDay();
+      if (schedule.weekdays.includes(dow)) break;
+      next.setDate(next.getDate() + 1);
     }
   }
-  // 7 天内未找到（不应发生，兜底返回明天同一时刻）
-  const fallback = new Date(from.getTime() + 24 * 60 * 60 * 1000);
-  return fallback.toISOString();
-}
-
-/** 匹配单个 cron 字段值（内部使用） */
-function matchCronField(field: string, value: number, min: number, max: number): boolean {
-  if (field === "*") return true;
-  for (const part of field.split(",")) {
-    if (part.startsWith("*/")) {
-      const n = Number(part.slice(2));
-      if (n > 0 && value % n === 0) return true;
-    } else if (part.includes("-")) {
-      const [a, b] = part.split("-").map(Number);
-      if (value >= a && value <= b) return true;
-    } else {
-      const n = Number(part);
-      if (n === value) return true;
-      // 周日：0 和 7 都表示周日
-      if (min === 0 && max === 7 && n === 7 && value === 0) return true;
-    }
-  }
-  return false;
+  return next.toISOString();
 }
 
 export function radarsRoutes(ctx: AppContext): Hono {
@@ -399,7 +337,7 @@ export function radarsRoutes(ctx: AppContext): Hono {
   });
 
   // ============================================================
-  // PUT /:id/schedule - 设置/更新定时（V1.5-06 新增）
+  // PUT /:id/schedule - 设置/更新定时（V1.5-06 新增，V1.6-02 改为 HH:MM）
   // ============================================================
   app.put("/:id/schedule", async (c) => {
     const start = Date.now();
@@ -408,27 +346,46 @@ export function radarsRoutes(ctx: AppContext): Hono {
     if (!radar) {
       return c.json(errorResponse("RADAR_NOT_FOUND", `雷达 ${id} 不存在`, Date.now() - start, 404), 404);
     }
-    let body: { cron?: string; timezone?: string };
+    let body: {
+      time?: string;
+      frequency?: "daily" | "weekly";
+      weekdays?: number[];
+      timezone?: string;
+    };
     try {
       body = await c.req.json();
     } catch {
       return c.json(errorResponse("BAD_REQUEST", "请求体不是合法 JSON", Date.now() - start, 400), 400);
     }
-    if (!body.cron || typeof body.cron !== "string") {
-      return c.json(errorResponse("BAD_REQUEST", "cron 必填", Date.now() - start, 400), 400);
+    if (!body.time || typeof body.time !== "string") {
+      return c.json(errorResponse("BAD_REQUEST", "time 必填（HH:MM 格式）", Date.now() - start, 400), 400);
     }
-    const cronValidation = validateCron(body.cron);
-    if (!cronValidation.valid) {
-      return c.json(errorResponse("INVALID_CRON", cronValidation.error ?? "cron 格式非法", Date.now() - start, 400), 400);
+    if (!validateScheduleTime(body.time)) {
+      return c.json(errorResponse("INVALID_TIME", `time "${body.time}" 格式非法，应为 HH:MM（如 08:00）`, Date.now() - start, 400), 400);
+    }
+    const frequency = body.frequency ?? "daily";
+    if (frequency !== "daily" && frequency !== "weekly") {
+      return c.json(errorResponse("BAD_REQUEST", `frequency 必须为 daily 或 weekly，当前: ${frequency}`, Date.now() - start, 400), 400);
+    }
+    // weekly 模式下校验 weekdays
+    if (frequency === "weekly") {
+      if (!Array.isArray(body.weekdays) || body.weekdays.length === 0) {
+        return c.json(errorResponse("BAD_REQUEST", "weekly 模式下 weekdays 必填（1-7 数组）", Date.now() - start, 400), 400);
+      }
+      const invalid = body.weekdays.filter((d) => !Number.isInteger(d) || d < 1 || d > 7);
+      if (invalid.length > 0) {
+        return c.json(errorResponse("BAD_REQUEST", `weekdays 必须为 1-7 整数，非法值: ${invalid.join(",")}`, Date.now() - start, 400), 400);
+      }
     }
     const timezone = body.timezone ?? "Asia/Shanghai";
-    const nextRunAt = computeNextRunAt(body.cron, timezone);
     const schedule: RadarSchedule = {
-      cron: body.cron,
+      time: body.time,
+      frequency,
+      ...(frequency === "weekly" && body.weekdays ? { weekdays: body.weekdays } : {}),
       timezone,
       enabled: true,
-      nextRunAt,
     };
+    schedule.nextRunAt = computeNextRunAt(schedule);
     const updated = ctx.radarStore.update(id, { schedule });
     if (updated) ctx.radarStore.save();
     return c.json({ success: true, data: updated, error: null, duration_ms: Date.now() - start } satisfies ApiResponse);

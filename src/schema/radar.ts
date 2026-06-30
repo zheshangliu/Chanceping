@@ -79,18 +79,27 @@ export interface RadarPrivacy {
 }
 
 // ============================================================
-// 定时运行配置（V1.5-06 新增）
+// 定时运行配置（V1.5-06 新增，V1.6-02 降级为 HH:MM）
 // ============================================================
 
 /**
- * 雷达定时运行配置。
+ * 雷达定时运行配置（V1.6-02 降级：cron → HH:MM）。
  *
- * cron 为 5 字段 unix 格式（分 时 日 月 周），如 "0 8 * * *" = 每天 8:00。
- * 时区用 IANA 格式，如 "Asia/Shanghai"。
+ * V1.6-02 评审v3 指出产品验证期不需要完整 cron 引擎，降级为 HH:MM + frequency + weekdays
+ * 更稳妥。接入现有 Scheduler.tick() 60s 循环。
+ *
+ * - time：HH:MM 格式（如 "08:00" = 每天 8:00）
+ * - frequency：daily=每天 / weekly=按周几
+ * - weekdays：weekly 时生效，1-7 = 周一到周日（周日=7）
+ * - timezone：IANA 格式，如 "Asia/Shanghai"（V1.6-02 仍用本地时间匹配，timezone 保留接口）
  */
 export interface RadarSchedule {
-  /** cron 表达式（5 字段 unix 格式，如 "0 8 * * *" = 每天 8:00） */
-  cron: string;
+  /** 执行时间（HH:MM 格式，如 "08:00" = 每天 8:00） */
+  time: string;
+  /** 执行频率：daily=每天 / weekly=按周几 */
+  frequency: "daily" | "weekly";
+  /** 周几执行（weekly 时生效，1-7 = 周一到周日，周日=7） */
+  weekdays?: number[];
   /** 时区（IANA 格式，如 "Asia/Shanghai"） */
   timezone: string;
   /** 是否启用 */

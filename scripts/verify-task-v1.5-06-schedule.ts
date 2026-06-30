@@ -1,13 +1,13 @@
 /**
- * Task V1.5-06 验收脚本：定时运行雷达
+ * Task V1.5-06 验收脚本：定时运行雷达（V1.6-02 适配 HH:MM 格式）
  *
  * 运行：npx tsx scripts/verify-task-v1.5-06-schedule.ts
  *
  * 验证范围（16 项断言，回归 3 项由外部命令运行）：
- *   6.1 定时配置（1-5）：PUT schedule / nextRunAt 非空 / 无效 cron 400 / DELETE / 内置雷达可设置
+ *   6.1 定时配置（1-5）：PUT schedule / nextRunAt 非空 / 无效 time 400 / DELETE / 内置雷达可设置
  *   6.2 scheduler 兼容（6-8）：radar_id 优先 / radar_type 旧逻辑 / radar_id 不存在 fallback
  *   6.3 定时触发（9-12）：executeTrigger / RadarRun 记录 / lastRunAt 更新 / radarId 绑定
- *   6.4 回归（13-16）：presets 6 个 / validateCron valid / validateCron invalid / 外部命令 tsc + e2e
+ *   6.4 回归（13-16）：presets 6 个 / validateScheduleTime valid / validateScheduleTime invalid / 外部命令 tsc + e2e
  */
 
 import fs from "fs";
@@ -22,7 +22,7 @@ import { JsonRadarStore, JsonRadarRunStore } from "../src/agents/radar-store";
 import { RadarRegistry } from "../src/agents/radar-registry";
 import { JsonReportStore } from "../src/agents/report-store";
 import type { ApiResponse } from "../src/api/types";
-import { validateCron, computeNextRunAt } from "../src/api/routes/radars";
+import { validateScheduleTime, computeNextRunAt } from "../src/api/routes/radars";
 import { executeTrigger } from "../src/scheduler/triggers";
 import { listPresets } from "../src/scheduler/presets";
 
@@ -130,24 +130,24 @@ async function main(): Promise<void> {
   const app = createApp(ctx);
   const builtinId = "builtin_ai_competition";
 
-  // 1. PUT /api/radars/:id/schedule 传 cron="0 8 * * *" → 200，Radar.schedule 含 cron + enabled=true
+  // 1. PUT /api/radars/:id/schedule 传 time="08:00" frequency="daily" → 200，Radar.schedule 含 time + enabled=true
   {
     const res = await app.request(`/api/radars/${builtinId}/schedule`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cron: "0 8 * * *" }),
+      body: JSON.stringify({ time: "08:00", frequency: "daily", timezone: "Asia/Shanghai" }),
     });
     const json = await parseResponse(res);
-    const radar = json.data as { schedule?: { cron?: string; enabled?: boolean } } | null;
+    const radar = json.data as { schedule?: { time?: string; enabled?: boolean } } | null;
     const ok =
       res.status === 200 &&
       json.success === true &&
-      radar?.schedule?.cron === "0 8 * * *" &&
+      radar?.schedule?.time === "08:00" &&
       radar?.schedule?.enabled === true;
     check(
-      "1. PUT schedule cron=0 8 * * * → 200，schedule 含 cron + enabled=true",
+      "1. PUT schedule time=08:00 → 200，schedule 含 time + enabled=true",
       ok,
-      `status=${res.status}, success=${json.success}, cron=${radar?.schedule?.cron}, enabled=${radar?.schedule?.enabled}`,
+      `status=${res.status}, success=${json.success}, time=${radar?.schedule?.time}, enabled=${radar?.schedule?.enabled}`,
     );
 
     // 2. 返回的 schedule.nextRunAt 非空
@@ -159,17 +159,17 @@ async function main(): Promise<void> {
     );
   }
 
-  // 3. PUT 传无效 cron="abc" → 400 INVALID_CRON
+  // 3. PUT 传无效 time="25:00" → 400 INVALID_TIME
   {
     const res = await app.request(`/api/radars/${builtinId}/schedule`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cron: "abc" }),
+      body: JSON.stringify({ time: "25:00" }),
     });
     const json = await parseResponse(res);
     check(
-      "3. PUT 无效 cron=abc → 400 INVALID_CRON",
-      res.status === 400 && json.success === false && json.error?.code === "INVALID_CRON",
+      "3. PUT 无效 time=25:00 → 400 INVALID_TIME",
+      res.status === 400 && json.success === false && json.error?.code === "INVALID_TIME",
       `status=${res.status}, code=${json.error?.code}`,
     );
   }
@@ -193,7 +193,7 @@ async function main(): Promise<void> {
     const res = await app.request(`/api/radars/${builtinId}/schedule`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ cron: "*/30 * * * *" }),
+      body: JSON.stringify({ time: "08:30", frequency: "daily" }),
     });
     const json = await parseResponse(res);
     check(
@@ -209,14 +209,21 @@ async function main(): Promise<void> {
   section("6.2 scheduler 兼容");
 
   const ctx2 = createTestContext();
-  // 先给内置雷达设置 schedule（用于后续触发测试）
-  ctx2.radarStore.update(builtinId, {
-    schedule: {
-      cron: "0 8 * * *",
+  // 先给内置雷达设置 schedule（用于后续触发测试）—— V1.6-02 改用 HH:MM 格式
+  const testSchedule = {
+    time: "08:00",
+    frequency: "daily" as const,
+    timezone: "Asia/Shanghai",
+    enabled: true,
+    nextRunAt: computeNextRunAt({
+      time: "08:00",
+      frequency: "daily" as const,
       timezone: "Asia/Shanghai",
       enabled: true,
-      nextRunAt: computeNextRunAt("0 8 * * *", "Asia/Shanghai"),
-    },
+    }),
+  };
+  ctx2.radarStore.update(builtinId, {
+    schedule: testSchedule,
   });
   ctx2.radarStore.save();
 
@@ -330,23 +337,23 @@ async function main(): Promise<void> {
     );
   }
 
-  // 15. validateCron("0 8 * * *") = valid
+  // 15. validateScheduleTime("08:00") = true
   {
-    const r = validateCron("0 8 * * *");
+    const r = validateScheduleTime("08:00");
     check(
-      "15. validateCron(0 8 * * *) = valid",
-      r.valid === true,
-      `valid=${r.valid}, error=${r.error ?? ""}`,
+      "15. validateScheduleTime(08:00) = true",
+      r === true,
+      `result=${r}`,
     );
   }
 
-  // 16. validateCron("abc") = invalid
+  // 16. validateScheduleTime("25:00") = false
   {
-    const r = validateCron("abc");
+    const r = validateScheduleTime("25:00");
     check(
-      "16. validateCron(abc) = invalid",
-      r.valid === false,
-      `valid=${r.valid}`,
+      "16. validateScheduleTime(25:00) = false",
+      r === false,
+      `result=${r}`,
     );
   }
 

@@ -25,6 +25,7 @@ import type { Schedule, Period, JobRecord, SchedulerStatus } from "./types";
 import { JobQueue } from "./job-queue";
 import { executeTrigger } from "./triggers";
 import type { AppContext } from "../api/context";
+import type { Radar } from "../schema/radar";
 
 export class Scheduler {
   private readonly queue: JobQueue;
@@ -112,6 +113,7 @@ export class Scheduler {
   async tick(): Promise<void> {
     this.lastTickAt = new Date().toISOString();
     const now = new Date();
+    // 1. 现有 JobRecord 检查（不变）
     for (const schedule of this.schedules.values()) {
       if (!schedule.enabled) continue;
       if (this.shouldExecute(schedule, now)) {
@@ -119,6 +121,39 @@ export class Scheduler {
         this.updateNextRun(schedule);
       }
     }
+    // 2. V1.6-02 新增：Radar schedule 检查（RadarStore 里的 Radar.schedule）
+    await this.checkRadarSchedules(now);
+  }
+
+  /**
+   * V1.6-02 新增：检查所有 Radar 的 schedule，到期则执行 executeTrigger("search", { radar_id })。
+   *
+   * 错误隔离：单个雷达执行失败不影响其他雷达。
+   */
+  private async checkRadarSchedules(now: Date): Promise<void> {
+    if (!this.ctx.radarStore) return;
+    const radars = this.ctx.radarStore.list({ includeArchived: false });
+    for (const radar of radars) {
+      if (!radar.schedule?.enabled || !radar.schedule.nextRunAt) continue;
+      const nextRun = new Date(radar.schedule.nextRunAt);
+      if (nextRun <= now) {
+        try {
+          await this.executeRadarSchedule(radar);
+        } catch (err) {
+          console.error(`[Scheduler] 雷达 ${radar.id} 执行失败:`, err);
+        }
+      }
+    }
+  }
+
+  /**
+   * V1.6-02 新增：执行单个 Radar 的定时任务。
+   *
+   * 复用 executeTrigger("search", { radar_id }) 路径，与 V1.5-06 的
+   * executeScheduledRadarSearch 等价（executeTrigger 内部会调用它）。
+   */
+  private async executeRadarSchedule(radar: Radar): Promise<void> {
+    await executeTrigger("search", { radar_id: radar.id, max_results: 20 }, this.ctx);
   }
 
   /** 判断是否该执行 */

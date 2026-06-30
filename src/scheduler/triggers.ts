@@ -173,7 +173,7 @@ async function executeScheduledRadarSearch(
       schedulePatch.schedule = {
         ...radar.schedule,
         lastRunAt: now,
-        nextRunAt: computeNextRunAt(radar.schedule.cron, radar.schedule.timezone, new Date(now)),
+        nextRunAt: computeNextRunAt(radar.schedule, new Date(now)),
       };
     }
     ctx.radarStore.update(radar.id, schedulePatch);
