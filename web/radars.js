@@ -415,6 +415,7 @@
           <button class="btn-primary" id="ai-generate-submit">生成</button>
         </div>
         <div id="ai-generate-result" style="display:none; padding: 0 20px 20px;"></div>
+        <div id="ai-gen-error" style="display:none; padding: 0 20px 20px;"></div>
       </div>
     `;
     document.body.appendChild(modal);
@@ -454,6 +455,11 @@
       resultDiv.style.display = "block";
       resultDiv.innerHTML = '<p class="placeholder">AI 正在生成雷达规格...</p>';
     }
+    const errorDiv = modal.querySelector("#ai-gen-error");
+    if (errorDiv) {
+      errorDiv.style.display = "none";
+      errorDiv.innerHTML = "";
+    }
 
     try {
       const res = await fetch("/api/radars/generate", {
@@ -465,19 +471,61 @@
       if (json.success && json.data) {
         renderGenerateResult(modal, json.data, description);
       } else {
+        // V1.6-09：展示失败原因 + 降级选项
         const msg = json.error?.message || "生成失败";
-        if (resultDiv) resultDiv.innerHTML = `<p class="placeholder">生成失败：${escapeHtml(msg)}</p>`;
+        showGenerateError(modal, msg, description);
         if (window.showToast) showToast(`生成失败：${msg}`, "error");
       }
     } catch (err) {
-      if (resultDiv) resultDiv.innerHTML = '<p class="placeholder">生成失败：网络错误</p>';
-      if (window.showToast) showToast("生成失败：网络错误", "error");
+      // V1.6-09：网络错误等，同样展示降级选项
+      const msg = (err && err.message) || "网络错误，请稍后重试";
+      showGenerateError(modal, msg, description);
+      if (window.showToast) showToast(`生成失败：${msg}`, "error");
     } finally {
       if (submitBtn) {
         submitBtn.disabled = false;
         submitBtn.textContent = "生成";
       }
     }
+  }
+
+  /**
+   * V1.6-09：展示 AI 生成失败原因 + 降级选项（重试/手动创建/转入一次一问）。
+   * @param {HTMLElement} modal - modal DOM
+   * @param {string} message - 失败原因
+   * @param {string} description - 用户输入的需求描述（用于转入一次一问时预填）
+   */
+  function showGenerateError(modal, message, description) {
+    const errorDiv = modal.querySelector("#ai-gen-error");
+    if (!errorDiv) return;
+    const resultDiv = modal.querySelector("#ai-generate-result");
+    if (resultDiv) resultDiv.style.display = "none";
+    errorDiv.innerHTML = `
+      <div class="generate-error">
+        <p class="error-message">AI 生成失败：${escapeHtml(message)}</p>
+        <div class="error-actions">
+          <button class="btn-primary" id="ai-gen-retry">重试</button>
+          <button class="btn-cancel" id="ai-gen-manual">手动创建</button>
+          <button class="btn-cancel" id="ai-gen-oneshot">转入一次一问</button>
+        </div>
+      </div>
+    `;
+    errorDiv.style.display = "block";
+    errorDiv.querySelector("#ai-gen-retry").addEventListener("click", () => {
+      errorDiv.style.display = "none";
+      errorDiv.innerHTML = "";
+      submitGenerate(modal);
+    });
+    errorDiv.querySelector("#ai-gen-manual").addEventListener("click", () => {
+      modal.remove();
+      openCreateModal();
+    });
+    errorDiv.querySelector("#ai-gen-oneshot").addEventListener("click", () => {
+      modal.remove();
+      if (window.switchTab) switchTab("chat");
+      const chatInput = document.getElementById("chat-input");
+      if (chatInput) chatInput.value = description;
+    });
   }
 
   /**

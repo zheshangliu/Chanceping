@@ -221,7 +221,12 @@
     // 加粗
     html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
     // 链接
-    html = html.replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>');
+    html = html.replace(/\[(.+?)\]\((.+?)\)/g, (match, text, url) => {
+      if (/^(https?:\/\/|\/\/)/i.test(url)) {
+        return `<a href="${url}" target="_blank" rel="noopener">${text}</a>`;
+      }
+      return match; // 非安全协议,保留原文
+    });
     // 列表项
     html = html.replace(/^- (.+)$/gm, "<li>$1</li>");
     // 段落分隔

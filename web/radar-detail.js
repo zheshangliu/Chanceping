@@ -114,12 +114,15 @@
   // 加载雷达详情
   // ============================================================
 
+  let loadDetailSeq = 0;
+
   /**
    * 加载雷达详情（GET /api/radars/:id）。
    * @param {string} radarId - 雷达 ID
    */
   async function loadRadarDetail(radarId) {
     if (!radarId) return;
+    const seq = ++loadDetailSeq;
     currentRadarId = radarId;
     const container = document.getElementById("radar-detail-view");
     if (!container) return;
@@ -128,6 +131,7 @@
     try {
       const res = await fetch(`/api/radars/${encodeURIComponent(radarId)}`);
       const json = await res.json();
+      if (seq !== loadDetailSeq) return; // 不是最新请求,丢弃
       if (json.success && json.data) {
         currentRadar = json.data;
         renderRadarDetail(currentRadar);
@@ -137,6 +141,7 @@
         if (window.showToast) showToast(`雷达详情加载失败：${msg}`, "error");
       }
     } catch (err) {
+      if (seq !== loadDetailSeq) return; // 不是最新请求,丢弃
       container.innerHTML = '<p class="placeholder">加载失败：网络错误</p>';
       if (window.showToast) showToast("雷达详情加载失败：网络错误", "error");
     }
@@ -541,7 +546,7 @@
 
     card.innerHTML = `
       <div class="card-header">
-        <span class="level-badge level-${level.toLowerCase()}">${level}</span>
+        <span class="level-badge level-${level.toLowerCase()}">${escapeHtml(String(level))}</span>
         <a class="card-title" href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(title)}</a>
       </div>
       <div class="card-meta">
@@ -553,7 +558,7 @@
         })()}
       </div>
       ${reason ? `<div class="card-reason">💡 ${escapeHtml(reason)}</div>` : ""}
-      <div class="card-total-score">ChanceScore: ${totalScore}分</div>
+      <div class="card-total-score">ChanceScore: ${escapeHtml(String(totalScore))}分</div>
     `;
     return card;
   }

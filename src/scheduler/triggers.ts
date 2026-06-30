@@ -118,10 +118,15 @@ async function executeSearchTrigger(
  * @returns 执行结果
  */
 async function executeScheduledRadarSearch(
-  radar: { id: string; name: string; kind: string; spec: RadarRequirementSpec; schedule?: RadarSchedule; watchRules?: string[] },
+  radar: { id: string; name: string; kind: string; spec: RadarRequirementSpec; schedule?: RadarSchedule; watchRules?: string[]; currentRunId?: string },
   maxResults: number,
   ctx: AppContext,
 ): Promise<Record<string, unknown>> {
+  // V1.6a 自检修复(BUG-8.2):已有运行中的任务时跳过,避免并发重复执行
+  if (radar.currentRunId) {
+    console.warn(`[Scheduler] 雷达 ${radar.id} 已有运行中的任务 ${radar.currentRunId},跳过本次定时执行`);
+    return { radar_id: radar.id, skipped: true, reason: "already_running", current_run_id: radar.currentRunId };
+  }
   const spec = radar.spec;
   const run = ctx.radarRunStore.create({
     radarId: radar.id,
@@ -176,11 +181,14 @@ async function executeScheduledRadarSearch(
       lastRunStatus: "succeeded",
       lastRunAt: now,
     };
-    if (radar.schedule && radar.schedule.enabled) {
+    // V1.6a 自检修复(BUG-8.3):回写前重新获取最新 radar,避免用旧快照覆盖用户修改
+    const latestRadar = ctx.radarRegistry.getRadarById(radar.id);
+    const latestSchedule = latestRadar?.schedule ?? radar.schedule;
+    if (latestSchedule && latestSchedule.enabled) {
       schedulePatch.schedule = {
-        ...radar.schedule,
+        ...latestSchedule,
         lastRunAt: now,
-        nextRunAt: computeNextRunAt(radar.schedule, new Date(now)),
+        nextRunAt: computeNextRunAt(latestSchedule, new Date(now)),
       };
     }
     ctx.radarStore.update(radar.id, schedulePatch);
@@ -216,11 +224,14 @@ async function executeScheduledRadarSearch(
       lastRunStatus: "failed",
       lastRunAt: now,
     };
-    if (radar.schedule && radar.schedule.enabled) {
+    // V1.6a 自检修复(BUG-8.3):回写前重新获取最新 radar,避免用旧快照覆盖用户修改
+    const latestRadarFail = ctx.radarRegistry.getRadarById(radar.id);
+    const latestScheduleFail = latestRadarFail?.schedule ?? radar.schedule;
+    if (latestScheduleFail && latestScheduleFail.enabled) {
       failUpdate.schedule = {
-        ...radar.schedule,
+        ...latestScheduleFail,
         lastRunAt: now,
-        nextRunAt: computeNextRunAt(radar.schedule, new Date(now)),
+        nextRunAt: computeNextRunAt(latestScheduleFail, new Date(now)),
       };
     }
     ctx.radarStore.update(radar.id, failUpdate);

@@ -144,6 +144,8 @@ export interface RadarRunStore {
   listByRadarId(radarId: string, limit?: number): RadarRun[];
   /** 更新运行记录（用于状态流转） */
   update(id: string, patch: Partial<RadarRun>): RadarRun | null;
+  /** 删除运行记录（返回是否删除成功） */
+  delete(id: string): boolean;
   /** 持久化 */
   save(): void;
   /** 加载 */
@@ -430,6 +432,11 @@ export class JsonRadarRunStore implements RadarRunStore {
     const updated: RadarRun = { ...run, ...patch };
     this.runs.set(id, updated);
     return updated;
+  }
+
+  delete(id: string): boolean {
+    // 从内存 Map 中删除运行记录
+    return this.runs.delete(id);
   }
 
   save(): void {

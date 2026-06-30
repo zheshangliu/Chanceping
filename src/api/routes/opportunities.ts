@@ -42,9 +42,19 @@ export function opportunityRoutes(ctx: AppContext): Hono {
         allEntries.map((e) => ({ dedup_key: e.dedup_key, card: e.card })),
         new Date(),
       );
-      for (const t of transitions) {
-        // 回写过期/错过状态到 store（store 接口为 update）
-        ctx.store.update(t.dedup_key, { status: t.to });
+      if (transitions.length > 0) {
+        // V1.6a 自检修复:批量更新前禁用 autoFlush,避免 N 次 update 触发 N 次全量 writeFileSync
+        const originalAutoFlush = ctx.store.autoFlush;
+        ctx.store.autoFlush = false;
+        try {
+          for (const t of transitions) {
+            // 回写过期/错过状态到 store（store 接口为 update）
+            ctx.store.update(t.dedup_key, { status: t.to });
+          }
+        } finally {
+          ctx.store.autoFlush = originalAutoFlush;
+          ctx.store.flush(); // 单次 flush
+        }
       }
 
       const q: StoreQuery = {};

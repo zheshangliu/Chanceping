@@ -262,7 +262,7 @@
 
     card.innerHTML = `
       <div class="card-header">
-        <span class="level-badge level-${level.toLowerCase()}">${level}</span>
+        <span class="level-badge level-${level.toLowerCase()}">${escapeHtml(String(level))}</span>
         <a class="card-title" href="${escapeAttr(url)}" target="_blank" rel="noopener">${escapeHtml(title)}</a>
         <button class="star-btn" data-key="${escapeAttr(card.dataset.guid)}">${isStarred(card.dataset.guid) ? "★" : "☆"}</button>
         <button class="expand-btn">▼</button>
@@ -274,7 +274,7 @@
         ${decisionHtml}
       </div>
       ${reason ? `<div class="card-reason">💡 ${escapeHtml(reason)}</div>` : ""}
-      <div class="card-total-score">ChanceScore: ${totalScore}分</div>
+      <div class="card-total-score">ChanceScore: ${escapeHtml(String(totalScore))}分</div>
       <div class="card-scores">
         ${SCORE_DIMENSIONS.map((dim) => {
           const val = score[dim.key] ?? 0;
@@ -282,8 +282,8 @@
           return `
             <div class="score-item">
               <span class="score-label">${dim.label}</span>
-              <div class="score-bar"><div class="score-bar-fill ${colorClass}" style="width:${val}%"></div></div>
-              <span class="score-value">${val}</span>
+              <div class="score-bar"><div class="score-bar-fill ${colorClass}" style="width:${escapeHtml(String(val))}%"></div></div>
+              <span class="score-value">${escapeHtml(String(val))}</span>
             </div>`;
         }).join("")}
       </div>

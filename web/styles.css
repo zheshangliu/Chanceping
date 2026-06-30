@@ -2710,6 +2710,32 @@ textarea {
   border-color: var(--text-secondary);
 }
 
+/* V1.6-09：AI 生成失败前端降级样式 */
+.generate-error {
+  padding: 12px;
+  border: 1px solid var(--error);
+  border-radius: 8px;
+  background: rgba(244, 67, 54, 0.08);
+}
+.generate-error .error-message {
+  color: var(--error);
+  font-weight: 500;
+  margin-bottom: 8px;
+  word-break: break-all;
+}
+.generate-error .error-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.generate-error .error-actions button {
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
 /* 响应式：小屏堆叠 */
 @media (max-width: 768px) {
   .radar-cards-grid {

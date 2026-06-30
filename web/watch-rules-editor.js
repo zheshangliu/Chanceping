@@ -284,7 +284,7 @@
 
       // 渲染错误
       for (const err of errors) {
-        html += `<div class="preview-error">行 ${err.line_number}: ${err.message}</div>`;
+        html += `<div class="preview-error">行 ${err.line_number}: ${this.escapeHtml(err.message)}</div>`;
       }
 
       // 渲染解析结果
@@ -294,7 +294,7 @@
           continue;
         }
         if (item.type === "group") {
-          html += `<div class="preview-group">[${item.name}]</div>`;
+          html += `<div class="preview-group">[${this.escapeHtml(item.name)}]</div>`;
           continue;
         }
         if (item.type === "rule") {
@@ -431,6 +431,7 @@
       document.querySelectorAll(".tab-panel").forEach((panel) => {
         panel.classList.toggle("active", panel.id === `panel-${tabName}`);
       });
+      window.dispatchEvent(new CustomEvent("tab-switched", { detail: { tab: tabName } }));
     },
   };
 

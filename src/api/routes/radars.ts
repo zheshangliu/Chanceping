@@ -127,6 +127,8 @@ export function radarsRoutes(ctx: AppContext): Hono {
       spec: body.spec,
       providerRouting: body.providerRouting,
     });
+    // V1.6a 自检修复:创建后立即 save,避免重启丢失
+    ctx.radarStore.save();
     return c.json({ success: true, data: radar, error: null, duration_ms: Date.now() - start } satisfies ApiResponse);
   });
 
@@ -156,7 +158,7 @@ export function radarsRoutes(ctx: AppContext): Hono {
       return c.json({ success: true, data, error: null, duration_ms: Date.now() - start } satisfies ApiResponse);
     } catch (err) {
       return c.json(
-        errorResponse("GENERATE_ERROR", err instanceof Error ? err.message : String(err), Date.now() - start, 500),
+        errorResponse("RADAR_GENERATION_FAILED", err instanceof Error ? err.message : String(err), Date.now() - start, 500),
         500,
       );
     }
@@ -444,6 +446,9 @@ export function radarsRoutes(ctx: AppContext): Hono {
 
     // 2. 更新 Radar.currentRunId
     ctx.radarStore.update(id, { currentRunId: run.id });
+    // V1.6a 自检修复:立即持久化 currentRunId,避免崩溃后状态不一致
+    ctx.radarStore.save();
+    ctx.radarRunStore.save();
 
     try {
       // 3. 执行搜索

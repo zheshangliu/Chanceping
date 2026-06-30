@@ -210,7 +210,9 @@ export function reportRoutes(ctx: AppContext): Hono {
         }
       }
 
-      return c.json({ success: result.success, data: result, error: result.error ? { code: "REPORT_ERROR", message: result.error } : null, duration_ms: Date.now() - start } satisfies ApiResponse);
+      // V1.6a 自检修复:生成失败时返回 500(之前返回 200)
+      const httpStatus = result.success ? 200 : 500;
+      return c.json({ success: result.success, data: result, error: result.error ? { code: "REPORT_ERROR", message: result.error } : null, duration_ms: Date.now() - start } satisfies ApiResponse, httpStatus);
     } catch (err) {
       return c.json({ success: false, data: null, error: { code: "REPORT_ERROR", message: err instanceof Error ? err.message : String(err) }, duration_ms: Date.now() - start } satisfies ApiResponse, 500);
     }
@@ -333,6 +335,10 @@ export function reportRoutes(ctx: AppContext): Hono {
   app.get("/export/:filename", (c) => {
     const start = Date.now();
     const filename = c.req.param("filename");
+    // V1.6a 自检修复:禁止路径遍历
+    if (filename.includes("..") || filename.includes("/") || filename.includes("\\")) {
+      return c.json({ success: false, data: null, error: { code: "FORBIDDEN", message: "非法文件名" }, duration_ms: Date.now() - start } satisfies ApiResponse, 403);
+    }
     // 优先查 reports/export/，找不到再查 reports/api/（/generate 产出的报告存于此）
     const exportPath = path.resolve(process.cwd(), "reports", "export", filename);
     const apiPath = path.resolve(process.cwd(), "reports", "api", filename);

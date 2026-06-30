@@ -96,6 +96,8 @@ export interface ReportStore {
   list(filter?: ReportListFilter): ReportMeta[];
   /** 按雷达 ID 列出报告（按 createdAt 降序，默认 limit=50） */
   listByRadarId(radarId: string, limit?: number): ReportMeta[];
+  /** 删除报告元数据（返回是否删除成功；持久化由调用方负责） */
+  delete(id: string): boolean;
   /** 持久化到磁盘 */
   save(): void;
   /** 从磁盘加载 */
@@ -167,6 +169,11 @@ export class JsonReportStore implements ReportStore {
 
   listByRadarId(radarId: string, limit?: number): ReportMeta[] {
     return this.list({ radarId, limit });
+  }
+
+  delete(id: string): boolean {
+    // 从内存 Map 中删除；持久化由调用方负责（调用方需在删除后调用 save()）
+    return this.reports.delete(id);
   }
 
   save(): void {

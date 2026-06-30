@@ -115,6 +115,8 @@ export interface OpportunityStore {
   delete(dedup_key: string): boolean;
   /** 获取统计 */
   stats(): StoreStats;
+  /** 是否自动 flush（批量更新前可临时置 false 以减少磁盘写入，结束后手动 flush() 一次） */
+  autoFlush: boolean;
   /** 持久化到存储 */
   flush(): void;
   /** 从存储加载 */
@@ -317,8 +319,8 @@ export class LocalFileStore implements OpportunityStore {
   private entries: Map<string, StoreEntry> = new Map();
   /** 存储文件绝对路径 */
   private readonly filePath: string;
-  /** 是否自动 flush */
-  private readonly autoFlush: boolean;
+  /** 是否自动 flush（批量更新前可临时置 false 以减少磁盘写入，结束后手动 flush() 一次） */
+  public autoFlush: boolean;
 
   constructor(options: { file_path?: string; auto_flush?: boolean } = {}) {
     const filePath = options.file_path ?? DEFAULT_STORE_PATH;

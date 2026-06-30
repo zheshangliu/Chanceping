@@ -203,8 +203,8 @@ export class MeilisearchStore implements OpportunityStore {
   private readonly client: MeiliSearchClient | null;
   /** 索引名称 */
   private readonly indexName: string;
-  /** 是否自动 flush */
-  private readonly autoFlush: boolean;
+  /** 是否自动 flush（批量更新前可临时置 false 以减少写入，结束后手动 flush() 一次） */
+  public autoFlush: boolean;
   /** 是否为 Mock 模式（纯内存） */
   private mockMode: boolean;
   /** 是否已初始化索引配置 */

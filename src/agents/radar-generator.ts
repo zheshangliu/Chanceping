@@ -21,6 +21,7 @@ import type { RadarRequirementSpec } from "../schema/radar-requirement-spec";
 import { RadarSpecCompiler } from "./radar-spec-compiler";
 import { RadarSpecValidator } from "../schema/radar-spec-validator";
 import { parseJsonWithRepair } from "../utils/json-repair";
+import { getLlmMode } from "../demo/data-mode";
 import {
   RADAR_GENERATOR_SYSTEM_PROMPT,
   RADAR_GENERATOR_USER_PROMPT,
@@ -198,8 +199,8 @@ export class RadarGenerator {
       ? `${description}\n\n[上传文件内容]\n${uploadedText}`
       : description;
 
-    // 判断 Mock 模式
-    const isMockMode = process.env.LLM_MODE === "mock";
+    // 判断 Mock 模式（V1.6a 自检修复:用 getLlmMode() 替代 process.env,确保默认值一致）
+    const isMockMode = getLlmMode() === "mock";
 
     let extractedInfo: ExtractedRequirementInfo;
 
@@ -249,7 +250,7 @@ export class RadarGenerator {
       return normalizeExtractedInfo(parsed);
     } catch (err) {
       // LLM 调用失败：mock 模式降级返回空 info，live 模式必须抛错（不能静默 fallback）
-      if (process.env.LLM_MODE === "mock") {
+      if (getLlmMode() === "mock") {
         return createMockExtractedInfo(description);
       }
       const errMsg = err instanceof Error ? err.message : String(err);

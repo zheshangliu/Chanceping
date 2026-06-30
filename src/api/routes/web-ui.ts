@@ -53,17 +53,13 @@ export function webUiRoutes(): Hono {
   function serveFile(relativePath: string, contentType: string) {
     return (c: Context) => {
       const fullPath = path.join(webDir, relativePath);
+      // V1.6a 自检修复:路径遍历防护,确保解析后路径仍在 webDir 内
+      if (!fullPath.startsWith(webDir + path.sep) && fullPath !== webDir) {
+        return c.json({ success: false, data: null, error: { code: "FORBIDDEN", message: "非法路径" }, duration_ms: 0 }, 403);
+      }
       if (!fs.existsSync(fullPath)) {
         return c.json(
-          {
-            success: false,
-            data: null,
-            error: {
-              code: "NOT_FOUND",
-              message: `静态文件不存在: ${relativePath}`,
-            },
-            duration_ms: 0,
-          },
+          { success: false, data: null, error: { code: "NOT_FOUND", message: "文件不存在" }, duration_ms: 0 },
           404,
         );
       }
@@ -144,6 +140,10 @@ export function webUiRoutes(): Hono {
   // 二进制静态资源（Logo 等）：/assets/logo.png → web/assets/logo.png
   app.get("/assets/:filename", (c) => {
     const filename = c.req.param("filename");
+    // V1.6a 自检修复:禁止路径遍历
+    if (filename.includes("..") || filename.includes("/") || filename.includes("\\")) {
+      return c.json({ success: false, data: null, error: { code: "FORBIDDEN", message: "非法文件名" }, duration_ms: 0 }, 403);
+    }
     return serveBinaryFile(`assets/${filename}`)(c);
   });
 

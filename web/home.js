@@ -179,7 +179,7 @@ async function sendFirstMessage(message, radarType) {
   } catch (err) {
     window.dispatchEvent(new CustomEvent("chat-typing-end"));
     window.dispatchEvent(
-      new CustomEvent("chat-error", { message: err.message }),
+      new CustomEvent("chat-error", { detail: { message: err.message } }),
     );
   }
 }
