@@ -506,6 +506,13 @@ export function radarsRoutes(ctx: AppContext): Hono {
         opportunityCards: searchResult.opportunityCards,
         sourceCandidates: searchResult.sourceCandidates,
         opportunities: opportunitiesWithRadarId,
+        // V1.6b 自检修复:透传 V1.6 统计字段
+        watch_rules_before: searchResult.watch_rules_before,
+        watch_rules_after: searchResult.watch_rules_after,
+        watch_rules_filtered_out: searchResult.watch_rules_filtered_out,
+        ai_filter_skipped: searchResult.ai_filter_skipped,
+        ai_filter_executed: searchResult.ai_filter_executed,
+        providerDegradation: searchResult.providerDegradation,
       };
       return c.json({ success: true, data: result, error: null, duration_ms: Date.now() - start } satisfies ApiResponse);
     } catch (err) {

@@ -164,6 +164,21 @@ export interface RadarRunResult {
   sourceCandidates?: SourceCandidate[];
   /** 搜索到的机会列表（调试用，含评分明细） */
   opportunities: ScoredOpportunity[];
+  /** V1.6b 新增：Watch Rules 过滤统计 */
+  watch_rules_before?: number;
+  watch_rules_after?: number;
+  watch_rules_filtered_out?: number;
+  /** V1.6b 新增：AI 精筛统计(增量复用) */
+  ai_filter_skipped?: number;
+  ai_filter_executed?: number;
+  /** V1.6b 新增：provider 降级信息 */
+  providerDegradation?: {
+    fallbackUsed: boolean;
+    primaryErrors: Record<string, string>;
+    /** V1.6b 新增：fallback provider 的错误记录（provider name → 错误信息） */
+    fallbackErrors: Record<string, string>;
+    fallbackProviders: string[];
+  };
 }
 
 // ============================================================

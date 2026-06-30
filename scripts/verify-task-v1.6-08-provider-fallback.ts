@@ -551,7 +551,8 @@ async function main(): Promise<void> {
 
   check("H1. primary + fallback 全失败 → total_raw=0", resultH.total_raw === 0);
   check("H2. providerDegradation.fallbackUsed = true", resultH.providerDegradation?.fallbackUsed === true);
-  check("H3. primaryErrors 含 fallback 错误（带 [fallback] 前缀）", Object.entries(resultH.providerDegradation?.primaryErrors ?? {}).some(([, v]) => v.includes("[fallback]")));
+  // V1.6b 自检修复:fallback 错误已分离到 fallbackErrors 字典(不再混入 primaryErrors)
+  check("H3. fallbackErrors 含 fallback provider 错误", Object.keys(resultH.providerDegradation?.fallbackErrors ?? {}).length > 0);
 
   // 清理
   providerRegistry.unregister("test_primary_fail_h");

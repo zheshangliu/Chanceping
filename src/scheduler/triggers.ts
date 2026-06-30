@@ -118,7 +118,7 @@ async function executeSearchTrigger(
  * @returns 执行结果
  */
 async function executeScheduledRadarSearch(
-  radar: { id: string; name: string; kind: string; spec: RadarRequirementSpec; schedule?: RadarSchedule; watchRules?: string[]; currentRunId?: string },
+  radar: { id: string; name: string; kind: string; spec: RadarRequirementSpec; schedule?: RadarSchedule; watchRules?: string[]; currentRunId?: string; providerRouting?: import("../schema/radar").ProviderRouting },
   maxResults: number,
   ctx: AppContext,
 ): Promise<Record<string, unknown>> {
@@ -147,7 +147,7 @@ async function executeScheduledRadarSearch(
     const result = await orchestrator.search(
       spec,
       undefined,
-      undefined,
+      radar.providerRouting, // V1.6b 自检修复:传入雷达级 provider 路由(之前传 undefined)
       radar.watchRules, // V1.6-06：传入雷达级 Watch Rules
     );
 

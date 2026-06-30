@@ -30,6 +30,7 @@ import type { EvidenceItem } from "../schema/evidence-item";
 import type { OpportunityCard } from "../schema/opportunity-card";
 import type { RadarType, OpportunityStore } from "../agents/opportunity-store";
 import { computeDedupKey } from "../agents/opportunity-store";
+import { normalizeUrl } from "../utils/url-normalizer";
 import { providerRegistry } from "./provider-registry";
 import { ruleFilter } from "./rule-filter";
 import { aiFilter, type AIFilterItem } from "./ai-filter";
@@ -122,6 +123,8 @@ export interface SearchOrchestratorResult {
     fallbackUsed: boolean;
     /** primary provider 的错误记录（provider name → 错误信息） */
     primaryErrors: Record<string, string>;
+    /** V1.6b 新增：fallback provider 的错误记录（provider name → 错误信息） */
+    fallbackErrors: Record<string, string>;
     /** 实际被调用的 fallback provider 名称列表 */
     fallbackProviders: string[];
   };
@@ -193,6 +196,30 @@ function buildSkipFetchItems(results: SearchResult[]): AIFilterItem[] {
       content: emptyContent,
       relevance: SKIP_FETCH_RELEVANCE,
       reason: "跳过内容抓取，固定相关度 50",
+    };
+  });
+}
+
+/**
+ * V1.6b 修复 BUG-9.3：构造 AI 精筛降级 AIFilterItem（relevance=0，相关度未知）。
+ *
+ * AI 精筛失败时使用，确保流程不中断（fail-open）。与 scoreOpportunities 的
+ * try/catch 降级策略一致。
+ */
+function buildDegradedAIFilterItems(results: SearchResult[]): AIFilterItem[] {
+  return results.map((result) => {
+    const emptyContent: CleanedContent = {
+      url: result.url,
+      title: result.title,
+      main_text: result.snippet ?? "",
+      word_count: result.snippet?.length ?? 0,
+      fetch_success: false,
+    };
+    return {
+      result,
+      content: emptyContent,
+      relevance: 0,
+      reason: "AI 精筛降级：相关度未知",
     };
   });
 }
@@ -327,6 +354,8 @@ export class SearchOrchestrator {
 
       // 收集 primary 错误
       const primaryErrors: Record<string, string> = {};
+      // V1.6b 修复 BUG-9：fallback 错误单独收集，不再污染 primaryErrors
+      const fallbackErrors: Record<string, string> = {};
       for (const r of primaryResults) {
         if (r.error) {
           errors.push(r.error);
@@ -338,11 +367,11 @@ export class SearchOrchestrator {
       let allResults = deduplicateByUrL(primaryResults.flatMap((r) => r.results));
 
       // V1.6-08：primary 全失败（无结果）时启用 fallback
+      // V1.6b 自检修复:移除 primaryProviders.length > 0 条件,允许 primary 全 disabled 时触发 fallback
       let fallbackUsed = false;
       const fallbackProviderNames: string[] = [];
       if (
         allResults.length === 0 &&
-        primaryProviders.length > 0 &&
         fallbackProviders.length > 0
       ) {
         fallbackUsed = true;
@@ -363,7 +392,7 @@ export class SearchOrchestrator {
         for (const r of fallbackResults) {
           if (r.error) {
             errors.push(r.error);
-            primaryErrors[r.provider] = r.error;
+            fallbackErrors[r.provider] = r.error;
           }
         }
 
@@ -378,6 +407,7 @@ export class SearchOrchestrator {
         providerDegradation = {
           fallbackUsed,
           primaryErrors,
+          fallbackErrors,
           fallbackProviders: fallbackProviderNames,
         };
       }
@@ -429,15 +459,15 @@ export class SearchOrchestrator {
     let aiFilterExecuted = 0;
     if (this.enableContentFetch) {
       if (this.opportunityStore) {
-        // V1.6-07：按 dedupKey 拆分 cached（命中复用）和 fresh（需 AI 精筛）
-        // 注：dedupKey 计算需与 mapToCard 入库时一致。
-        //   mapToCard 设置 `guid: scored.guid ?? url`，当搜索结果无 guid 时 card.guid=url，
-        //   computeDedupKey 优先用 guid，故 dedupKey = sha256(url).slice(0,16)。
-        //   这里用 `result.url` 作为第三参数 guid，保持与入库路径一致。
+        // V1.6b 自检修复:dedupKey 计算需与入库时一致
+        //   入库时 card.guid = scored.guid ?? normalizeUrl(url)
+        //   scored.guid 优先用 rawData.guid/id,否则用 normalizeUrl(url)
+        //   SearchResult 无 guid/raw_data,用 normalizeUrl(url) 匹配最常见的 fallback 路径
         const cached: AIFilterItem[] = [];
         const fresh: SearchResult[] = [];
         for (const result of ruleResult.passed) {
-          const dedupKey = computeDedupKey(result.title, result.url, result.url);
+          const normalizedGuid = normalizeUrl(result.url);
+          const dedupKey = computeDedupKey(result.title, result.url, normalizedGuid);
           const existing = this.opportunityStore.getByDedupKey(dedupKey);
           if (existing && existing.card.ai_analysis) {
             // 命中缓存：复用上次 AI 分析结果，构造 AIFilterItem
@@ -464,20 +494,36 @@ export class SearchOrchestrator {
         // 对 fresh 部分调用 AI 精筛
         let freshPassed: AIFilterItem[] = [];
         if (fresh.length > 0) {
-          const aiResult = await aiFilter(fresh, spec, this.llmAdapter, {
-            minRelevance: this.minRelevance,
-            mockContent: this.mockContent,
-          });
-          freshPassed = aiResult.passed;
+          // V1.6b 修复 BUG-9.3：aiFilter 调用增加 try/catch，失败时降级（对比 scoreOpportunities 第 504-509 行）
+          try {
+            const aiResult = await aiFilter(fresh, spec, this.llmAdapter, {
+              minRelevance: this.minRelevance,
+              mockContent: this.mockContent,
+            });
+            freshPassed = aiResult.passed;
+          } catch (err) {
+            const errMsg = err instanceof Error ? err.message : String(err);
+            errors.push(`AI 精筛失败（fresh）: ${errMsg}`);
+            // 降级：有缓存则仅返回缓存（丢弃无法分析的 fresh）；无缓存则全部 fresh（relevance=0）
+            freshPassed = cached.length > 0 ? [] : buildDegradedAIFilterItems(fresh);
+          }
         }
         aiPassed = [...cached, ...freshPassed];
       } else {
         // 未传入 store：走原逻辑（全量 AI 精筛）
-        const aiResult = await aiFilter(ruleResult.passed, spec, this.llmAdapter, {
-          minRelevance: this.minRelevance,
-          mockContent: this.mockContent,
-        });
-        aiPassed = aiResult.passed;
+        // V1.6b 修复 BUG-9.3：aiFilter 调用增加 try/catch，失败时降级返回全部结果（relevance=0）
+        try {
+          const aiResult = await aiFilter(ruleResult.passed, spec, this.llmAdapter, {
+            minRelevance: this.minRelevance,
+            mockContent: this.mockContent,
+          });
+          aiPassed = aiResult.passed;
+        } catch (err) {
+          const errMsg = err instanceof Error ? err.message : String(err);
+          errors.push(`AI 精筛失败: ${errMsg}`);
+          // 降级：无缓存，返回全部结果（relevance=0，相关度未知）
+          aiPassed = buildDegradedAIFilterItems(ruleResult.passed);
+        }
         aiFilterExecuted = ruleResult.passed.length;
       }
     } else {
@@ -559,6 +605,15 @@ export class SearchOrchestrator {
         const { parseWatchRules } = await import("../watch/dsl-parser");
         const { filterByWatchRules } = await import("../watch/search-integration");
         const ruleSet = parseWatchRules(watchRules.join("\n"));
+        // V1.6b 修复 BUG-4：解析错误记录到 errors（但不阻断过滤，保持 fail-open）
+        if (ruleSet.errors.length > 0) {
+          for (const parseErr of ruleSet.errors) {
+            errors.push(
+              `Watch Rules 解析错误（第 ${parseErr.line_number} 行）: ${parseErr.message}` +
+                (parseErr.raw_line ? ` [${parseErr.raw_line}]` : ""),
+            );
+          }
+        }
         // 仅在有有效规则时过滤（空规则集返回全部，避免误过滤）
         if (ruleSet.rules.length > 0) {
           const radarTypeCast = radarType as RadarType;

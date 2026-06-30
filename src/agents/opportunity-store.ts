@@ -17,7 +17,7 @@ import path from "path";
 import crypto from "crypto";
 import type { OpportunityCard, OpportunityCardStatus } from "../schema/opportunity-card";
 import type { CardVisibleLevel } from "../schema/scoring-rules";
-import { hashContent, computeChangeRatio } from "../search/incremental-tagger";
+import { hashContent } from "../search/incremental-tagger";
 
 // ============================================================
 // 类型定义
@@ -194,11 +194,10 @@ function computeCardContentHash(card: OpportunityCard): string {
  * V1.6-07：计算增量标签（contentHash + changeRatio + incremental）。
  *
  * 规则：
- *   - 已存在条目且有 contentHash：计算 changeRatio = computeChangeRatio(oldHash, newHash)
- *     注：computeChangeRatio 接受字符串内容，这里传 hash 字符串比较（hash 相同 → 0，不同 → 1）
- *     更准确的做法是用原始内容比较，但 store 中只存 hash，所以用 hash 比对：
- *       hash 相同 → changeRatio = 0（incremental=true）
- *       hash 不同 → changeRatio = 1（incremental=false，需重新分析）
+ *   - 已存在条目且有 contentHash：直接比较 hash 字符串（V1.6b 修复：不再调用
+ *     computeChangeRatio，因该函数基于字符集差异，对 hex hash 字符串会产生错误结果）：
+ *       hash 相同 → changeRatio = 0（incremental=true，内容未变）
+ *       hash 不同 → changeRatio = 1.0（incremental=false，内容已变，需重新分析）
  *   - 已存在但无 contentHash（旧数据）：changeRatio = 1.0，incremental=false（视为新内容）
  *   - 不存在：changeRatio = 1.0，incremental=false（新内容）
  *
@@ -216,8 +215,8 @@ function computeIncrementalTag(
     if (existing.contentHash === contentHash) {
       return { contentHash, changeRatio: 0, incremental: true };
     }
-    // hash 不同 → 内容有变化，用 computeChangeRatio 估算变化比例
-    const changeRatio = computeChangeRatio(existing.contentHash, contentHash);
+    // V1.6b 修复：hash 不同 → 内容已变，直接返回 changeRatio=1.0（不再调用 computeChangeRatio 比较 hash 字符串）
+    const changeRatio = existing.contentHash === contentHash ? 0 : 1.0;
     return {
       contentHash,
       changeRatio,
