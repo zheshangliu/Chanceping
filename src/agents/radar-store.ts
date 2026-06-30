@@ -31,6 +31,7 @@ import {
   generateRunId,
 } from "../schema/radar";
 import type { RadarRequirementSpec } from "../schema/radar-requirement-spec";
+import { computeNextRunAt } from "../api/routes/radars";
 
 // ============================================================
 // Input / Filter 类型
@@ -348,12 +349,17 @@ function normalizeLegacySchedule(legacy: {
   const minute = isSimple ? parts[0] : "0";
   const hour = isSimple ? parts[1] : "8";
   const time = `${hour.padStart(2, "0")}:${minute.padStart(2, "0")}`;
-  return {
+  // V1.6a 自检修复:迁移后补算 nextRunAt,避免旧定时静默失效
+  const schedule: RadarSchedule = {
     time,
     frequency: "daily",
     timezone: legacy.timezone,
     enabled: legacy.enabled,
   };
+  if (schedule.enabled) {
+    schedule.nextRunAt = computeNextRunAt(schedule, new Date());
+  }
+  return schedule;
 }
 
 // ============================================================

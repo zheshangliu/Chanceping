@@ -353,6 +353,7 @@ export function radarsRoutes(ctx: AppContext): Hono {
       frequency?: "daily" | "weekly";
       weekdays?: number[];
       timezone?: string;
+      enabled?: boolean; // V1.6a 自检修复:允许设置 enabled=false 临时禁用
     };
     try {
       body = await c.req.json();
@@ -385,7 +386,7 @@ export function radarsRoutes(ctx: AppContext): Hono {
       frequency,
       ...(frequency === "weekly" && body.weekdays ? { weekdays: body.weekdays } : {}),
       timezone,
-      enabled: true,
+      enabled: body.enabled ?? true, // V1.6a 自检修复:默认 true,允许传 false 禁用
     };
     schedule.nextRunAt = computeNextRunAt(schedule);
     const updated = ctx.radarStore.update(id, { schedule });
@@ -450,6 +451,7 @@ export function radarsRoutes(ctx: AppContext): Hono {
         llmAdapter: ctx.llmAdapter,
         mockContent: true,
         dataMode: getDataMode(),
+        opportunityStore: ctx.store, // V1.6-07：传入机会库引用，启用增量标签复用
       });
       const searchResult = await orchestrator.search(
         radar.spec,

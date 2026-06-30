@@ -17,6 +17,7 @@ import path from "path";
 import crypto from "crypto";
 import type { OpportunityCard, OpportunityCardStatus } from "../schema/opportunity-card";
 import type { CardVisibleLevel } from "../schema/scoring-rules";
+import { hashContent, computeChangeRatio } from "../search/incremental-tagger";
 
 // ============================================================
 // 类型定义
@@ -41,6 +42,12 @@ export interface StoreEntry {
   radarId?: string;
   /** V1.5 自检新增：多雷达归属（同一机会可被多个雷达搜到） */
   radarIds?: string[];
+  /** V1.6-07 新增：内容 hash（SHA-256，基于 title + description + official_source_url） */
+  contentHash?: string;
+  /** V1.6-07 新增：上次分析的 change_ratio（0-1，新内容=1.0，完全相同=0） */
+  changeRatio?: number;
+  /** V1.6-07 新增：是否为增量更新（true = 内容未变/变化<10%，可复用上次 AI 分析） */
+  incremental?: boolean;
 }
 
 /** 查询条件 */
@@ -98,6 +105,8 @@ export interface OpportunityStore {
   addBatch(cards: OpportunityCard[], radar_type: RadarType, radarId?: string): StoreEntry[];
   /** 按 dedup_key 获取 */
   get(dedup_key: string): StoreEntry | null;
+  /** V1.6-07 新增：按 dedup_key 获取（OpportunityStore 接口别名，供增量标签复用查询） */
+  getByDedupKey(dedup_key: string): StoreEntry | undefined;
   /** 查询 */
   list(query: StoreQuery): StoreQueryResult;
   /** 更新卡片（含状态转换） */
@@ -160,6 +169,62 @@ const CARD_STATUSES: OpportunityCardStatus[] = [
 
 /** 可见等级列表（用于 stats 初始化，含 hidden） */
 const VISIBLE_LEVELS: Array<CardVisibleLevel | "hidden"> = ["S", "A", "B", "C", "D", "hidden"];
+
+/** V1.6-07：增量标签阈值（change_ratio < 0.1 视为增量更新，可复用上次 AI 分析） */
+const INCREMENTAL_CHANGE_THRESHOLD = 0.1;
+
+/**
+ * V1.6-07：计算机会卡片的内容 hash（SHA-256）。
+ *
+ * hash 内容：title + match_reason + official_source_url 拼接（任务书约束 1：title + description + url）。
+ * 这里用 card.match_reason 作为 description 的等价字段（OpportunityCard 没有 description 字段，
+ * match_reason 是 LLM 生成的"为什么适合你"摘要，最能代表 AI 分析输入内容）。
+ *
+ * @param card 机会卡片
+ * @returns 64 字符十六进制 hash
+ */
+function computeCardContentHash(card: OpportunityCard): string {
+  const content = [card.title, card.match_reason, card.official_source_url].join("\n");
+  return hashContent(content);
+}
+
+/**
+ * V1.6-07：计算增量标签（contentHash + changeRatio + incremental）。
+ *
+ * 规则：
+ *   - 已存在条目且有 contentHash：计算 changeRatio = computeChangeRatio(oldHash, newHash)
+ *     注：computeChangeRatio 接受字符串内容，这里传 hash 字符串比较（hash 相同 → 0，不同 → 1）
+ *     更准确的做法是用原始内容比较，但 store 中只存 hash，所以用 hash 比对：
+ *       hash 相同 → changeRatio = 0（incremental=true）
+ *       hash 不同 → changeRatio = 1（incremental=false，需重新分析）
+ *   - 已存在但无 contentHash（旧数据）：changeRatio = 1.0，incremental=false（视为新内容）
+ *   - 不存在：changeRatio = 1.0，incremental=false（新内容）
+ *
+ * @param newCard 新卡片
+ * @param existing 已存在的条目（可选）
+ * @returns { contentHash, changeRatio, incremental }
+ */
+function computeIncrementalTag(
+  newCard: OpportunityCard,
+  existing?: StoreEntry | null,
+): { contentHash: string; changeRatio: number; incremental: boolean } {
+  const contentHash = computeCardContentHash(newCard);
+  if (existing && existing.contentHash) {
+    // hash 完全匹配 → 内容未变 → incremental=true
+    if (existing.contentHash === contentHash) {
+      return { contentHash, changeRatio: 0, incremental: true };
+    }
+    // hash 不同 → 内容有变化，用 computeChangeRatio 估算变化比例
+    const changeRatio = computeChangeRatio(existing.contentHash, contentHash);
+    return {
+      contentHash,
+      changeRatio,
+      incremental: changeRatio < INCREMENTAL_CHANGE_THRESHOLD,
+    };
+  }
+  // 新内容或旧数据无 contentHash
+  return { contentHash, changeRatio: 1.0, incremental: false };
+}
 
 // ============================================================
 // 辅助函数
@@ -266,6 +331,8 @@ export class LocalFileStore implements OpportunityStore {
     const dedupKey = computeDedupKey(card.title, card.official_source_url, card.guid);
     const existing = this.entries.get(dedupKey);
     const now = nowIso();
+    // V1.6-07：计算增量标签（contentHash + changeRatio + incremental）
+    const incrementalTag = computeIncrementalTag(card, existing ?? null);
 
     let entry: StoreEntry;
     if (existing) {
@@ -281,6 +348,10 @@ export class LocalFileStore implements OpportunityStore {
         updated_at: now,
         ...(radarId !== undefined ? { radarId } : {}),
         radarIds: mergedRadarIds,
+        // V1.6-07：增量标签
+        contentHash: incrementalTag.contentHash,
+        changeRatio: incrementalTag.changeRatio,
+        incremental: incrementalTag.incremental,
       };
     } else {
       // 不存在：新增条目
@@ -292,6 +363,10 @@ export class LocalFileStore implements OpportunityStore {
         dedup_key: dedupKey,
         ...(radarId !== undefined ? { radarId } : {}),
         ...(radarId !== undefined ? { radarIds: [radarId] } : {}),
+        // V1.6-07：增量标签（新内容 changeRatio=1.0, incremental=false）
+        contentHash: incrementalTag.contentHash,
+        changeRatio: incrementalTag.changeRatio,
+        incremental: incrementalTag.incremental,
       };
     }
     this.entries.set(dedupKey, entry);
@@ -310,6 +385,8 @@ export class LocalFileStore implements OpportunityStore {
       const dedupKey = computeDedupKey(card.title, card.official_source_url, card.guid);
       const existing = this.entries.get(dedupKey);
       const now = nowIso();
+      // V1.6-07：计算增量标签
+      const incrementalTag = computeIncrementalTag(card, existing ?? null);
       let entry: StoreEntry;
       if (existing) {
         // V1.5 自检：radarIds 多雷达归属去重追加
@@ -323,6 +400,10 @@ export class LocalFileStore implements OpportunityStore {
           updated_at: now,
           ...(radarId !== undefined ? { radarId } : {}),
           radarIds: mergedRadarIds,
+          // V1.6-07：增量标签
+          contentHash: incrementalTag.contentHash,
+          changeRatio: incrementalTag.changeRatio,
+          incremental: incrementalTag.incremental,
         };
       } else {
         entry = {
@@ -333,6 +414,10 @@ export class LocalFileStore implements OpportunityStore {
           dedup_key: dedupKey,
           ...(radarId !== undefined ? { radarId } : {}),
           ...(radarId !== undefined ? { radarIds: [radarId] } : {}),
+          // V1.6-07：增量标签
+          contentHash: incrementalTag.contentHash,
+          changeRatio: incrementalTag.changeRatio,
+          incremental: incrementalTag.incremental,
         };
       }
       this.entries.set(dedupKey, entry);
@@ -347,6 +432,11 @@ export class LocalFileStore implements OpportunityStore {
   /** 按 dedup_key 获取 */
   get(dedup_key: string): StoreEntry | null {
     return this.entries.get(dedup_key) ?? null;
+  }
+
+  /** V1.6-07：按 dedup_key 获取（与 get 等价，返回 undefined 符合 Map 语义，供增量标签复用查询） */
+  getByDedupKey(dedup_key: string): StoreEntry | undefined {
+    return this.entries.get(dedup_key);
   }
 
   /** 查询 */

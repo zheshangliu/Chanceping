@@ -95,6 +95,8 @@ export interface OpportunityCard {
   riskSummary?: string;
   /** V1.3 新增：推荐行动列表（LLM 生成的具体行动建议） */
   recommendedActions?: string[];
+  /** V1.6-07 新增：AI 精筛分析结果（reason），用于增量标签复用（incremental=true 时跳过 AI 精筛） */
+  ai_analysis?: string;
 }
 
 // ============================================================

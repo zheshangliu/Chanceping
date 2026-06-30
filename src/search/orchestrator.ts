@@ -27,7 +27,8 @@ import type { DataMode } from "../demo/data-mode";
 import type { SourceCandidate } from "../schema/source-candidate";
 import type { EvidenceItem } from "../schema/evidence-item";
 import type { OpportunityCard } from "../schema/opportunity-card";
-import type { RadarType } from "../agents/opportunity-store";
+import type { RadarType, OpportunityStore } from "../agents/opportunity-store";
+import { computeDedupKey } from "../agents/opportunity-store";
 import { providerRegistry } from "./provider-registry";
 import { ruleFilter } from "./rule-filter";
 import { aiFilter, type AIFilterItem } from "./ai-filter";
@@ -58,6 +59,16 @@ export interface SearchOrchestratorConfig {
    * 未设置时默认 "live"，以保护现有测试不依赖环境变量。
    */
   dataMode?: DataMode;
+  /**
+   * V1.6-07 新增：机会库引用（可选，用于增量标签复用）。
+   *
+   * 传入后，AI 精筛前会检查 store 中是否已有同 dedupKey 且 incremental=true 的条目：
+   *   - 命中：跳过 AI 精筛，复用 store 中的 card.ai_analysis 构造 AIFilterItem
+   *   - 未命中：调用 aiFilter 正常精筛
+   *
+   * 不传入时行为不变（向后兼容）。
+   */
+  opportunityStore?: OpportunityStore;
 }
 
 /** 搜索编排器结果 */
@@ -94,6 +105,13 @@ export interface SearchOrchestratorResult {
   watch_rules_after?: number;
   /** V1.6-06 新增：Watch Rules 被过滤掉的数量 */
   watch_rules_filtered_out?: number;
+  // ============================================================
+  // V1.6-07 新增字段（增量标签复用指标）
+  // ============================================================
+  /** V1.6-07 新增：因 incremental=true 跳过 AI 精筛的数量（复用上次分析） */
+  ai_filter_skipped?: number;
+  /** V1.6-07 新增：实际调用 AI 精筛的数量（fresh 未命中缓存） */
+  ai_filter_executed?: number;
 }
 
 /** 默认每个 provider 最大结果数 */
@@ -176,6 +194,8 @@ export class SearchOrchestrator {
   private readonly enableContentFetch: boolean;
   private readonly mockContent: boolean;
   private readonly dataMode: DataMode;
+  /** V1.6-07：机会库引用（可选，用于增量标签复用） */
+  private readonly opportunityStore?: OpportunityStore;
 
   constructor(config: SearchOrchestratorConfig) {
     this.llmAdapter = config.llmAdapter;
@@ -184,6 +204,7 @@ export class SearchOrchestrator {
     this.enableContentFetch = config.enableContentFetch ?? true;
     this.mockContent = config.mockContent ?? true;
     this.dataMode = config.dataMode ?? DEFAULT_DATA_MODE;
+    this.opportunityStore = config.opportunityStore;
   }
 
   /**
@@ -309,16 +330,70 @@ export class SearchOrchestrator {
     }
 
     // 步骤 4：第二层 AI 精筛
+    // V1.6-07：增量标签复用 —— 如果 opportunityStore 已传入，先检查每条搜索结果是否在 store 中
+    // 已有同 dedupKey 且 card.ai_analysis 非空（之前 AI 精筛过），命中则跳过 AI 精筛复用上次分析
+    // 注：dedupKey 相同即视为同一机会（title+url 一致），复用上次 AI 分析；
+    //     incremental/changeRatio 在入库阶段计算，作为统计指标，不作为复用判据
     let aiPassed: AIFilterItem[];
+    let aiFilterSkipped = 0;
+    let aiFilterExecuted = 0;
     if (this.enableContentFetch) {
-      const aiResult = await aiFilter(ruleResult.passed, spec, this.llmAdapter, {
-        minRelevance: this.minRelevance,
-        mockContent: this.mockContent,
-      });
-      aiPassed = aiResult.passed;
+      if (this.opportunityStore) {
+        // V1.6-07：按 dedupKey 拆分 cached（命中复用）和 fresh（需 AI 精筛）
+        // 注：dedupKey 计算需与 mapToCard 入库时一致。
+        //   mapToCard 设置 `guid: scored.guid ?? url`，当搜索结果无 guid 时 card.guid=url，
+        //   computeDedupKey 优先用 guid，故 dedupKey = sha256(url).slice(0,16)。
+        //   这里用 `result.url` 作为第三参数 guid，保持与入库路径一致。
+        const cached: AIFilterItem[] = [];
+        const fresh: SearchResult[] = [];
+        for (const result of ruleResult.passed) {
+          const dedupKey = computeDedupKey(result.title, result.url, result.url);
+          const existing = this.opportunityStore.getByDedupKey(dedupKey);
+          if (existing && existing.card.ai_analysis) {
+            // 命中缓存：复用上次 AI 分析结果，构造 AIFilterItem
+            const cachedContent: CleanedContent = {
+              url: result.url,
+              title: result.title,
+              main_text: existing.card.match_reason || result.snippet || "",
+              word_count: (existing.card.match_reason || "").length,
+              fetch_success: true,
+            };
+            cached.push({
+              result,
+              content: cachedContent,
+              relevance: 50, // 复用值，刚好通过阈值
+              reason: existing.card.ai_analysis,
+            });
+          } else {
+            fresh.push(result);
+          }
+        }
+        aiFilterSkipped = cached.length;
+        aiFilterExecuted = fresh.length;
+
+        // 对 fresh 部分调用 AI 精筛
+        let freshPassed: AIFilterItem[] = [];
+        if (fresh.length > 0) {
+          const aiResult = await aiFilter(fresh, spec, this.llmAdapter, {
+            minRelevance: this.minRelevance,
+            mockContent: this.mockContent,
+          });
+          freshPassed = aiResult.passed;
+        }
+        aiPassed = [...cached, ...freshPassed];
+      } else {
+        // 未传入 store：走原逻辑（全量 AI 精筛）
+        const aiResult = await aiFilter(ruleResult.passed, spec, this.llmAdapter, {
+          minRelevance: this.minRelevance,
+          mockContent: this.mockContent,
+        });
+        aiPassed = aiResult.passed;
+        aiFilterExecuted = ruleResult.passed.length;
+      }
     } else {
       // 跳过内容抓取，relevance 固定 50，全部通过
       aiPassed = buildSkipFetchItems(ruleResult.passed);
+      aiFilterExecuted = ruleResult.passed.length;
     }
 
     // 边界情况：AI 精筛全部失败
@@ -359,6 +434,12 @@ export class SearchOrchestrator {
       evidenceItems = extractEvidenceBatch(cleanedContents, sourceIds);
 
       // 6.3 卡片映射（含 S 级硬规则）
+      // V1.6-07：构建 url → ai_analysis 映射，用于把 AI 精筛 reason 写入 card.ai_analysis
+      // 这样下次运行时，store 中的 card.ai_analysis 可被增量标签复用逻辑读取
+      const aiAnalysisByUrl = new Map<string, string>();
+      for (const item of aiPassed) {
+        aiAnalysisByUrl.set(item.result.url, item.reason);
+      }
       opportunityCards = opportunities.map((opp) => {
         // 为每个机会找到对应的来源和证据
         const oppUrl = opp.search_result.url;
@@ -366,7 +447,13 @@ export class SearchOrchestrator {
         const oppSourceIds = oppSources.map((s) => s.sourceId);
         const oppEvidence = evidenceItems!.filter((e) => oppSourceIds.includes(e.sourceId));
         const radarId = radarType;
-        return mapToCard(opp, oppSources, oppEvidence, radarId);
+        const card = mapToCard(opp, oppSources, oppEvidence, radarId);
+        // V1.6-07：写入 AI 精筛 reason 到 card.ai_analysis（供下次增量复用）
+        const aiAnalysis = aiAnalysisByUrl.get(oppUrl);
+        if (aiAnalysis) {
+          card.ai_analysis = aiAnalysis;
+        }
+        return card;
       });
     } catch (err) {
       const errMsg = err instanceof Error ? err.message : String(err);
@@ -429,6 +516,9 @@ export class SearchOrchestrator {
       watch_rules_before: watchRulesBefore,
       watch_rules_after: watchRulesAfter,
       watch_rules_filtered_out: watchRulesFilteredOut,
+      // V1.6-07 新增字段（增量标签复用指标）
+      ai_filter_skipped: aiFilterSkipped,
+      ai_filter_executed: aiFilterExecuted,
     };
   }
 }

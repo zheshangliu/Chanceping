@@ -131,6 +131,15 @@ export function webUiRoutes(): Hono {
     "/watch-rules-editor.js",
     serveFile("watch-rules-editor.js", "application/javascript; charset=utf-8"),
   );
+  // V1.6a 自检修复:注册雷达前端 JS 静态路由(之前 404)
+  app.get(
+    "/radars.js",
+    serveFile("radars.js", "application/javascript; charset=utf-8"),
+  );
+  app.get(
+    "/radar-detail.js",
+    serveFile("radar-detail.js", "application/javascript; charset=utf-8"),
+  );
 
   // 二进制静态资源（Logo 等）：/assets/logo.png → web/assets/logo.png
   app.get("/assets/:filename", (c) => {

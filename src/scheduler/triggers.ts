@@ -84,6 +84,7 @@ async function executeSearchTrigger(
     enableContentFetch: false, // 调度任务默认不抓正文，提升速度
     mockContent: true,
     dataMode: getDataMode(),
+    opportunityStore: ctx.store, // V1.6-07：传入机会库引用，启用增量标签复用
   });
   const result = await orchestrator.search(spec);
 
@@ -136,6 +137,7 @@ async function executeScheduledRadarSearch(
       enableContentFetch: false,
       mockContent: true,
       dataMode: getDataMode(),
+      opportunityStore: ctx.store, // V1.6-07：传入机会库引用，启用增量标签复用
     });
     const result = await orchestrator.search(
       spec,
@@ -208,11 +210,20 @@ async function executeScheduledRadarSearch(
       error: err instanceof Error ? err.message : String(err),
     });
     ctx.radarRunStore.save();
-    ctx.radarStore.update(radar.id, {
+    // V1.6a 自检修复:失败路径也推进 nextRunAt,避免每 60s 重试风暴
+    const failUpdate: { currentRunId: undefined; lastRunStatus: "failed"; lastRunAt: string; schedule?: RadarSchedule } = {
       currentRunId: undefined,
       lastRunStatus: "failed",
       lastRunAt: now,
-    });
+    };
+    if (radar.schedule && radar.schedule.enabled) {
+      failUpdate.schedule = {
+        ...radar.schedule,
+        lastRunAt: now,
+        nextRunAt: computeNextRunAt(radar.schedule, new Date(now)),
+      };
+    }
+    ctx.radarStore.update(radar.id, failUpdate);
     ctx.radarStore.save();
     throw err;
   }

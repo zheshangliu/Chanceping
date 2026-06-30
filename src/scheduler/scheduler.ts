@@ -134,7 +134,13 @@ export class Scheduler {
     if (!this.ctx.radarStore) return;
     const radars = this.ctx.radarStore.list({ includeArchived: false });
     for (const radar of radars) {
+      // V1.6a 自检修复:三重守卫
+      // 1. schedule 未启用或无 nextRunAt → 跳过
       if (!radar.schedule?.enabled || !radar.schedule.nextRunAt) continue;
+      // 2. radar 非 active 状态(暂停/草稿/归档)→ 跳过,避免暂停雷达仍被定时触发
+      if (radar.status !== "active") continue;
+      // 3. radar 已有正在运行的 currentRunId → 跳过,避免并发执行
+      if (radar.currentRunId) continue;
       const nextRun = new Date(radar.schedule.nextRunAt);
       if (nextRun <= now) {
         try {

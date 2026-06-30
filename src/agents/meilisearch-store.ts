@@ -288,11 +288,17 @@ export class MeilisearchStore implements OpportunityStore {
 
     let entry: StoreEntry;
     if (existing) {
+      // V1.5 自检：radarIds 多雷达归属去重追加
+      const existingRadarIds = existing.radarIds ?? (existing.radarId ? [existing.radarId] : []);
+      const mergedRadarIds = radarId && !existingRadarIds.includes(radarId)
+        ? [...existingRadarIds, radarId]
+        : existingRadarIds;
       entry = {
         ...existing,
         card: { ...card },
         updated_at: now,
         ...(radarId !== undefined ? { radarId } : {}),
+        radarIds: mergedRadarIds,
       };
     } else {
       entry = {
@@ -302,6 +308,7 @@ export class MeilisearchStore implements OpportunityStore {
         updated_at: now,
         dedup_key: dedupKey,
         ...(radarId !== undefined ? { radarId } : {}),
+        ...(radarId !== undefined ? { radarIds: [radarId] } : {}),
       };
     }
     this.entries.set(dedupKey, entry);
@@ -321,11 +328,17 @@ export class MeilisearchStore implements OpportunityStore {
       const now = nowIso();
       let entry: StoreEntry;
       if (existing) {
+        // V1.5 自检：radarIds 多雷达归属去重追加
+        const existingRadarIds = existing.radarIds ?? (existing.radarId ? [existing.radarId] : []);
+        const mergedRadarIds = radarId && !existingRadarIds.includes(radarId)
+          ? [...existingRadarIds, radarId]
+          : existingRadarIds;
         entry = {
           ...existing,
           card: { ...card },
           updated_at: now,
           ...(radarId !== undefined ? { radarId } : {}),
+          radarIds: mergedRadarIds,
         };
       } else {
         entry = {
@@ -335,6 +348,7 @@ export class MeilisearchStore implements OpportunityStore {
           updated_at: now,
           dedup_key: dedupKey,
           ...(radarId !== undefined ? { radarId } : {}),
+          ...(radarId !== undefined ? { radarIds: [radarId] } : {}),
         };
       }
       this.entries.set(dedupKey, entry);
@@ -349,6 +363,11 @@ export class MeilisearchStore implements OpportunityStore {
   /** 按 dedup_key 获取 */
   get(dedup_key: string): StoreEntry | null {
     return this.entries.get(dedup_key) ?? null;
+  }
+
+  /** V1.6-07:按 dedup_key 获取(接口别名) */
+  getByDedupKey(dedup_key: string): StoreEntry | undefined {
+    return this.entries.get(dedup_key);
   }
 
   /** 查询 */
@@ -377,7 +396,10 @@ export class MeilisearchStore implements OpportunityStore {
       filtered = filtered.filter((e) => isExpiringSoon(e.card.deadline));
     }
     if (query.radarId) {
-      filtered = filtered.filter((e) => e.radarId === query.radarId);
+      // V1.5 自检：同时检查 radarId（旧字段）和 radarIds（多雷达归属）
+      filtered = filtered.filter((e) =>
+        e.radarId === query.radarId || (e.radarIds && e.radarIds.includes(query.radarId!)),
+      );
     }
 
     // 2. 排序

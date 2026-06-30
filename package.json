@@ -54,6 +54,7 @@
     "verify:v16:radar-ids": "tsx scripts/verify-v1.6-04-radar-ids-e2e.ts",
     "verify:v16:schedule-ui": "tsx scripts/verify-task-v1.6-05-schedule-ui.ts",
     "verify:v16:watch-rules": "tsx scripts/verify-task-v1.6-06-watch-rules.ts",
+    "verify:v16:incremental": "tsx scripts/verify-task-v1.6-07-incremental.ts",
     "precheck": "tsx scripts/precheck.ts"
   },
   "dependencies": {
