@@ -71,6 +71,9 @@ export function opportunityRoutes(ctx: AppContext): Hono {
       if (deadlineFrom) q.deadline_from = deadlineFrom;
       const deadlineTo = c.req.query("deadline_to");
       if (deadlineTo) q.deadline_to = deadlineTo;
+      // V1.6-04:按雷达 ID 筛选(支持 radarIds 多归属,list() 已同时检查 radarId + radarIds)
+      const radarId = c.req.query("radar_id");
+      if (radarId) q.radarId = radarId;
       const result = ctx.store.list(q);
       return c.json({ success: true, data: result, error: null, duration_ms: Date.now() - start } satisfies ApiResponse);
     } catch (err) {
