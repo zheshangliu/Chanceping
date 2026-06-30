@@ -1,7 +1,42 @@
 import { serve } from "@hono/node-server";
+import fs from "fs";
+import path from "path";
 import { createApp } from "./app";
 import { createAppContext } from "./context";
 import { Scheduler } from "../scheduler/scheduler";
+import { getDataMode, getLlmMode } from "../demo/data-mode";
+
+// ============================================================
+// V1.6.5 修复：手动加载 .env 文件（项目未使用 dotenv）
+// 原因：server.ts 未加载 .env，导致 DATA_MODE/LLM_MODE 默认为 mock，
+// 需求确认不调用真实 LLM，confidence.total 永远为 0，无法生成雷达。
+// 必须在 createAppContext() 之前执行，确保 createAdapter() 能读到环境变量。
+// ============================================================
+function loadEnvFile(): void {
+  const envPath = path.join(process.cwd(), ".env");
+  if (!fs.existsSync(envPath)) {
+    console.warn("[ChancePing API] .env 文件不存在，使用默认配置（mock 模式）");
+    return;
+  }
+  const content = fs.readFileSync(envPath, "utf-8");
+  let loaded = 0;
+  for (const line of content.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eqIdx = trimmed.indexOf("=");
+    if (eqIdx === -1) continue;
+    const key = trimmed.substring(0, eqIdx).trim();
+    const val = trimmed.substring(eqIdx + 1).trim();
+    if (key && !process.env[key]) {
+      process.env[key] = val;
+      loaded++;
+    }
+  }
+  console.log(`[ChancePing API] 已加载 .env 文件（${loaded} 个变量）`);
+}
+
+loadEnvFile();
+console.log(`[ChancePing API] 数据模式: ${getDataMode()} | LLM 模式: ${getLlmMode()}`);
 
 const port = parseInt(process.env.PORT ?? "3000", 10);
 // V1.6-02: 显式创建 ctx，供 Scheduler 复用

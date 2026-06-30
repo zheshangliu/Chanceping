@@ -320,8 +320,16 @@ export class ConversationManager {
       uncertain_items?: UncertainItem[];
     };
     try {
-      parsed = JSON.parse(llmResponse.content);
+      // V1.6.5 修复：清理 LLM 返回的 JSON（移除 markdown 代码块标记 + 前后空白）
+      let jsonStr = llmResponse.content.trim();
+      // 移除 ```json ... ``` 或 ``` ... ``` 包裹
+      if (jsonStr.startsWith("```")) {
+        jsonStr = jsonStr.replace(/^```(?:json)?\s*\n?/, "").replace(/\n?```\s*$/, "");
+      }
+      parsed = JSON.parse(jsonStr);
     } catch {
+      // V1.6.5 修复：记录解析失败的原始内容，便于调试
+      console.warn("[ConversationManager] LLM 返回内容 JSON 解析失败，原始内容（前 200 字符）:", llmResponse.content.substring(0, 200));
       parsed = {};
     }
 
