@@ -9,6 +9,8 @@
 import type { RadarRequirementSpec } from "../schema/radar-requirement-spec";
 import type { ProviderRouting, RadarPrivacy, RadarRun } from "../schema/radar";
 import type { ScoredOpportunity } from "../search/types";
+import type { SourceCandidate } from "../schema/source-candidate";
+import type { OpportunityCard } from "../schema/opportunity-card";
 
 /** 统一响应格式 */
 export interface ApiResponse<T = unknown> {
@@ -152,7 +154,11 @@ export interface RadarRunRequest {
 export interface RadarRunResult {
   /** 运行记录 */
   run: RadarRun;
-  /** 搜索到的机会列表 */
+  /** 机会卡片列表（前端主数据） */
+  opportunityCards?: OpportunityCard[];
+  /** 来源候选列表 */
+  sourceCandidates?: SourceCandidate[];
+  /** 搜索到的机会列表（调试用，含评分明细） */
   opportunities: ScoredOpportunity[];
 }
 

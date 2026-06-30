@@ -247,9 +247,13 @@ export class RadarGenerator {
       // JSON 修复解析
       const parsed = parseJsonWithRepair<Record<string, unknown>>(response.content);
       return normalizeExtractedInfo(parsed);
-    } catch {
-      // LLM 调用失败，降级返回空 info
-      return createMockExtractedInfo(description);
+    } catch (err) {
+      // LLM 调用失败：mock 模式降级返回空 info，live 模式必须抛错（不能静默 fallback）
+      if (process.env.LLM_MODE === "mock") {
+        return createMockExtractedInfo(description);
+      }
+      const errMsg = err instanceof Error ? err.message : String(err);
+      throw new Error(`RadarGenerator LLM 调用失败: ${errMsg}`);
     }
   }
 }

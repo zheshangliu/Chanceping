@@ -84,6 +84,13 @@ export class ProviderRegistry {
     return this.providers.get(name);
   }
 
+  /** 按 name 列表批量获取已启用的 provider（V1.5 自检：支持 providerRouting） */
+  getByNames(names: string[]): SearchProvider[] {
+    return names
+      .map((n) => this.providers.get(n))
+      .filter((p): p is SearchProvider => p !== undefined && p.enabled);
+  }
+
   /** 获取所有已启用的 provider */
   getEnabled(): SearchProvider[] {
     return Array.from(this.providers.values()).filter((p) => p.enabled);

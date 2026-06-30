@@ -21,6 +21,7 @@
 
 import type { ScoredOpportunity, SearchResult, CleanedContent } from "./types";
 import type { RadarRequirementSpec } from "../schema/radar-requirement-spec";
+import type { ProviderRouting } from "../schema/radar";
 import type { LLMAdapter } from "../agents/llm-adapter";
 import type { DataMode } from "../demo/data-mode";
 import type { SourceCandidate } from "../schema/source-candidate";
@@ -180,11 +181,13 @@ export class SearchOrchestrator {
    *
    * @param spec 雷达需求规格
    * @param query 查询词（可选，为空时从 spec 拼接）
+   * @param providerRouting Provider 路由（可选，V1.5 自检：优先于 inferRadarType）
    * @returns SearchOrchestratorResult
    */
   async search(
     spec: RadarRequirementSpec,
     query?: string,
+    providerRouting?: ProviderRouting,
   ): Promise<SearchOrchestratorResult> {
     const startTime = Date.now();
     const errors: string[] = [];
@@ -216,7 +219,13 @@ export class SearchOrchestrator {
       }
     } else {
       // Live 模式：获取适用 providers
-      const providers = providerRegistry.getByRadarType(radarType).filter((p) => p.enabled);
+      // V1.5 自检：优先使用 providerRouting，fallback 到 inferRadarType
+      let providers;
+      if (providerRouting && providerRouting.primary && providerRouting.primary.length > 0) {
+        providers = providerRegistry.getByNames(providerRouting.primary);
+      } else {
+        providers = providerRegistry.getByRadarType(radarType).filter((p) => p.enabled);
+      }
 
       if (providers.length === 0) {
         errors.push(`无可用搜索 provider（radar_type=${radarType}）`);

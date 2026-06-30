@@ -41,6 +41,16 @@
     "verify:task047": "tsx scripts/verify-task047.ts",
     "verify:taskD": "tsx scripts/verify-task047.ts",
     "verify:taskE": "tsx scripts/verify-taskE.ts",
+    "verify:v15:model": "tsx scripts/verify-task-v1.5-01-model.ts",
+    "verify:v15:store": "tsx scripts/verify-task-v1.5-02-store.ts",
+    "verify:v15:api": "tsx scripts/verify-task-v1.5-03-api.ts",
+    "verify:v15:ui": "tsx scripts/verify-task-v1.5-04-ui.ts",
+    "verify:v15:gen": "tsx scripts/verify-task-v1.5-05-generator.ts",
+    "verify:v15:schedule": "tsx scripts/verify-task-v1.5-06-schedule.ts",
+    "verify:v15:quota": "tsx scripts/verify-task-v1.5-07-quota.ts",
+    "verify:v15:report": "tsx scripts/verify-task-v1.5-08-report.ts",
+    "verify:v15": "tsx scripts/verify-task-v1.5-01-model.ts && tsx scripts/verify-task-v1.5-02-store.ts && tsx scripts/verify-task-v1.5-03-api.ts && tsx scripts/verify-task-v1.5-04-ui.ts && tsx scripts/verify-task-v1.5-05-generator.ts && tsx scripts/verify-task-v1.5-06-schedule.ts && tsx scripts/verify-task-v1.5-07-quota.ts && tsx scripts/verify-task-v1.5-08-report.ts",
+    "verify:v15:e2e": "tsx scripts/verify-e2e-v13.ts && tsx scripts/verify-task038.ts && tsx scripts/verify-task022.ts && tsx scripts/verify-task028.ts",
     "precheck": "tsx scripts/precheck.ts"
   },
   "dependencies": {

@@ -319,6 +319,9 @@ export function radarsRoutes(ctx: AppContext): Hono {
     if (radar.isBuiltin) {
       return c.json(errorResponse("RADAR_NOT_DELETABLE", "内置雷达不可删除", Date.now() - start, 403), 403);
     }
+    if (radar.status === "archived") {
+      return c.json(errorResponse("BAD_REQUEST", `已归档的雷达不可重复归档`, Date.now() - start, 400), 400);
+    }
     const archived = ctx.radarStore.archive(id);
     if (archived) {
       ctx.radarStore.save();
@@ -339,8 +342,54 @@ export function radarsRoutes(ctx: AppContext): Hono {
     if (radar.isBuiltin) {
       return c.json(errorResponse("RADAR_NOT_EDITABLE", "内置雷达不可修改状态", Date.now() - start, 403), 403);
     }
-    if (radar.status !== "draft") {
-      return c.json(errorResponse("BAD_REQUEST", `仅 draft 状态可激活，当前状态: ${radar.status}`, Date.now() - start, 400), 400);
+    if (radar.status !== "draft" && radar.status !== "paused") {
+      return c.json(errorResponse("BAD_REQUEST", `仅 draft 或 paused 状态可激活，当前状态: ${radar.status}`, Date.now() - start, 400), 400);
+    }
+    const updated = ctx.radarStore.update(id, { status: "active" });
+    if (updated) {
+      ctx.radarStore.save();
+    }
+    return c.json({ success: true, data: updated, error: null, duration_ms: Date.now() - start } satisfies ApiResponse);
+  });
+
+  // ============================================================
+  // POST /:id/pause - 暂停雷达（active → paused）
+  // ============================================================
+  app.post("/:id/pause", (c) => {
+    const start = Date.now();
+    const id = c.req.param("id");
+    const radar = ctx.radarRegistry.getRadarById(id);
+    if (!radar) {
+      return c.json(errorResponse("RADAR_NOT_FOUND", `雷达 ${id} 不存在`, Date.now() - start, 404), 404);
+    }
+    if (radar.isBuiltin) {
+      return c.json(errorResponse("RADAR_NOT_EDITABLE", "内置雷达不可修改状态", Date.now() - start, 403), 403);
+    }
+    if (radar.status !== "active") {
+      return c.json(errorResponse("BAD_REQUEST", `仅 active 状态可暂停，当前状态: ${radar.status}`, Date.now() - start, 400), 400);
+    }
+    const updated = ctx.radarStore.update(id, { status: "paused" });
+    if (updated) {
+      ctx.radarStore.save();
+    }
+    return c.json({ success: true, data: updated, error: null, duration_ms: Date.now() - start } satisfies ApiResponse);
+  });
+
+  // ============================================================
+  // POST /:id/resume - 恢复雷达（paused → active）
+  // ============================================================
+  app.post("/:id/resume", (c) => {
+    const start = Date.now();
+    const id = c.req.param("id");
+    const radar = ctx.radarRegistry.getRadarById(id);
+    if (!radar) {
+      return c.json(errorResponse("RADAR_NOT_FOUND", `雷达 ${id} 不存在`, Date.now() - start, 404), 404);
+    }
+    if (radar.isBuiltin) {
+      return c.json(errorResponse("RADAR_NOT_EDITABLE", "内置雷达不可修改状态", Date.now() - start, 403), 403);
+    }
+    if (radar.status !== "paused") {
+      return c.json(errorResponse("BAD_REQUEST", `仅 paused 状态可恢复，当前状态: ${radar.status}`, Date.now() - start, 400), 400);
     }
     const updated = ctx.radarStore.update(id, { status: "active" });
     if (updated) {
@@ -443,7 +492,7 @@ export function radarsRoutes(ctx: AppContext): Hono {
         mockContent: true,
         dataMode: getDataMode(),
       });
-      const searchResult = await orchestrator.search(radar.spec, body.query);
+      const searchResult = await orchestrator.search(radar.spec, body.query, radar.providerRouting);
 
       // 4. 搜索结果存入 OpportunityStore，绑定 radarId
       const radarType = kindToRadarType(radar.kind);
@@ -475,7 +524,7 @@ export function radarsRoutes(ctx: AppContext): Hono {
       });
       ctx.radarStore.save();
 
-      // 7. 返回结果（opportunities 每条附加 radarId）
+      // 7. 返回结果（opportunityCards 为前端主数据，opportunities 为调试字段）
       const opportunitiesWithRadarId = searchResult.opportunities.map((opp) => ({
         ...opp,
         radarId: id,
@@ -483,6 +532,8 @@ export function radarsRoutes(ctx: AppContext): Hono {
 
       const result: RadarRunResult = {
         run: updatedRun ?? run,
+        opportunityCards: searchResult.opportunityCards,
+        sourceCandidates: searchResult.sourceCandidates,
         opportunities: opportunitiesWithRadarId,
       };
       return c.json({ success: true, data: result, error: null, duration_ms: Date.now() - start } satisfies ApiResponse);

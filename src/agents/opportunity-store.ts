@@ -37,8 +37,10 @@ export interface StoreEntry {
   updated_at: string;
   /** 去重 key（title + official_source_url 的 hash） */
   dedup_key: string;
-  /** V1.5-03 新增：所属雷达 ID（可选，向后兼容） */
+  /** V1.5-03 新增：所属雷达 ID（向后兼容，仅存首次入库的 radarId） */
   radarId?: string;
+  /** V1.5 自检新增：多雷达归属（同一机会可被多个雷达搜到） */
+  radarIds?: string[];
 }
 
 /** 查询条件 */
@@ -268,11 +270,17 @@ export class LocalFileStore implements OpportunityStore {
     let entry: StoreEntry;
     if (existing) {
       // 已存在：更新卡片内容，保留 added_at，更新 updated_at
+      // V1.5 自检：radarIds 多雷达归属去重追加
+      const existingRadarIds = existing.radarIds ?? (existing.radarId ? [existing.radarId] : []);
+      const mergedRadarIds = radarId && !existingRadarIds.includes(radarId)
+        ? [...existingRadarIds, radarId]
+        : existingRadarIds;
       entry = {
         ...existing,
         card: { ...card },
         updated_at: now,
         ...(radarId !== undefined ? { radarId } : {}),
+        radarIds: mergedRadarIds,
       };
     } else {
       // 不存在：新增条目
@@ -283,6 +291,7 @@ export class LocalFileStore implements OpportunityStore {
         updated_at: now,
         dedup_key: dedupKey,
         ...(radarId !== undefined ? { radarId } : {}),
+        ...(radarId !== undefined ? { radarIds: [radarId] } : {}),
       };
     }
     this.entries.set(dedupKey, entry);
@@ -303,11 +312,17 @@ export class LocalFileStore implements OpportunityStore {
       const now = nowIso();
       let entry: StoreEntry;
       if (existing) {
+        // V1.5 自检：radarIds 多雷达归属去重追加
+        const existingRadarIds = existing.radarIds ?? (existing.radarId ? [existing.radarId] : []);
+        const mergedRadarIds = radarId && !existingRadarIds.includes(radarId)
+          ? [...existingRadarIds, radarId]
+          : existingRadarIds;
         entry = {
           ...existing,
           card: { ...card },
           updated_at: now,
           ...(radarId !== undefined ? { radarId } : {}),
+          radarIds: mergedRadarIds,
         };
       } else {
         entry = {
@@ -317,6 +332,7 @@ export class LocalFileStore implements OpportunityStore {
           updated_at: now,
           dedup_key: dedupKey,
           ...(radarId !== undefined ? { radarId } : {}),
+          ...(radarId !== undefined ? { radarIds: [radarId] } : {}),
         };
       }
       this.entries.set(dedupKey, entry);
@@ -359,7 +375,10 @@ export class LocalFileStore implements OpportunityStore {
       filtered = filtered.filter((e) => isExpiringSoon(e.card.deadline));
     }
     if (query.radarId) {
-      filtered = filtered.filter((e) => e.radarId === query.radarId);
+      // V1.5 自检：同时检查 radarId（旧字段）和 radarIds（多雷达归属）
+      filtered = filtered.filter((e) =>
+        e.radarId === query.radarId || (e.radarIds && e.radarIds.includes(query.radarId!)),
+      );
     }
 
     // 2. 排序
