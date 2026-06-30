@@ -75,6 +75,8 @@ export interface RadarUpdateInput {
   lastRunAt?: string;
   /** V1.5-06 新增：定时运行配置（传 undefined 显式清空） */
   schedule?: RadarSchedule;
+  /** V1.6-06 新增：Watch Rules DSL 规则列表（传 undefined 显式清空） */
+  watchRules?: string[];
 }
 
 /** 列表过滤条件 */
@@ -259,6 +261,8 @@ export class JsonRadarStore implements RadarStore {
       ...(patch.lastRunAt !== undefined ? { lastRunAt: patch.lastRunAt } : {}),
       // V1.5-06：schedule 使用 in 检查 key 是否存在，传 undefined 表示显式清空
       ...("schedule" in patch ? { schedule: patch.schedule } : {}),
+      // V1.6-06 watchRules 使用 in 检查 key 是否存在，传 undefined 表示显式清空
+      ...("watchRules" in patch ? { watchRules: patch.watchRules } : {}),
       updatedAt: new Date().toISOString(),
     };
 

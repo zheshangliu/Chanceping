@@ -237,6 +237,8 @@ export function radarsRoutes(ctx: AppContext): Hono {
       ...(body.spec !== undefined ? { spec: body.spec } : {}),
       ...(body.privacy !== undefined ? { privacy: body.privacy } : {}),
       ...(body.providerRouting !== undefined ? { providerRouting: body.providerRouting } : {}),
+      // V1.6-06：支持更新 watchRules（用 in 检查以支持显式清空）
+      ...("watchRules" in body ? { watchRules: body.watchRules } : {}),
     });
     if (updated) {
       ctx.radarStore.save();
@@ -449,7 +451,12 @@ export function radarsRoutes(ctx: AppContext): Hono {
         mockContent: true,
         dataMode: getDataMode(),
       });
-      const searchResult = await orchestrator.search(radar.spec, body.query, radar.providerRouting);
+      const searchResult = await orchestrator.search(
+        radar.spec,
+        body.query,
+        radar.providerRouting,
+        radar.watchRules, // V1.6-06：传入雷达级 Watch Rules
+      );
 
       // 4. 搜索结果存入 OpportunityStore，绑定 radarId
       const radarType = kindToRadarType(radar.kind);

@@ -207,6 +207,8 @@ export interface Radar {
   providerRouting?: ProviderRouting;
   /** V1.5-06 新增：定时运行配置 */
   schedule?: RadarSchedule;
+  /** V1.6-06 新增：Watch Rules DSL 规则列表（按行存储，雷达级配置） */
+  watchRules?: string[];
 
   // 运行追踪（V1.5-01 新增）
   /** 当前运行 ID（运行中才有值，完成后清空） */

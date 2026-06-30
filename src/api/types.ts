@@ -144,6 +144,8 @@ export interface RadarUpdateRequest {
   privacy?: RadarPrivacy;
   /** Provider 路由 */
   providerRouting?: ProviderRouting;
+  /** V1.6-06 新增：Watch Rules DSL 规则列表 */
+  watchRules?: string[];
 }
 
 /** 运行雷达请求（可选） */

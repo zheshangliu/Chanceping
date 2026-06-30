@@ -117,7 +117,7 @@ async function executeSearchTrigger(
  * @returns 执行结果
  */
 async function executeScheduledRadarSearch(
-  radar: { id: string; name: string; kind: string; spec: RadarRequirementSpec; schedule?: RadarSchedule },
+  radar: { id: string; name: string; kind: string; spec: RadarRequirementSpec; schedule?: RadarSchedule; watchRules?: string[] },
   maxResults: number,
   ctx: AppContext,
 ): Promise<Record<string, unknown>> {
@@ -137,7 +137,12 @@ async function executeScheduledRadarSearch(
       mockContent: true,
       dataMode: getDataMode(),
     });
-    const result = await orchestrator.search(spec);
+    const result = await orchestrator.search(
+      spec,
+      undefined,
+      undefined,
+      radar.watchRules, // V1.6-06：传入雷达级 Watch Rules
+    );
 
     // 结果存入 OpportunityStore，绑定 radarId
     const radarType = kindToRadarType(radar.kind);
@@ -190,6 +195,10 @@ async function executeScheduledRadarSearch(
       opportunities_count: result.opportunities.length,
       duration_ms: result.duration_ms,
       errors: result.errors,
+      // V1.6-06：Watch Rules 过滤指标
+      watch_rules_before: result.watch_rules_before,
+      watch_rules_after: result.watch_rules_after,
+      watch_rules_filtered_out: result.watch_rules_filtered_out,
     };
   } catch (err) {
     const now = new Date().toISOString();

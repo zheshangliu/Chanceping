@@ -27,6 +27,7 @@ import type { DataMode } from "../demo/data-mode";
 import type { SourceCandidate } from "../schema/source-candidate";
 import type { EvidenceItem } from "../schema/evidence-item";
 import type { OpportunityCard } from "../schema/opportunity-card";
+import type { RadarType } from "../agents/opportunity-store";
 import { providerRegistry } from "./provider-registry";
 import { ruleFilter } from "./rule-filter";
 import { aiFilter, type AIFilterItem } from "./ai-filter";
@@ -84,6 +85,15 @@ export interface SearchOrchestratorResult {
   evidenceItems?: EvidenceItem[];
   /** V1.3 新增：机会卡片列表（映射后的 OpportunityCard，含 S 级硬规则） */
   opportunityCards?: OpportunityCard[];
+  // ============================================================
+  // V1.6-06 新增字段（Watch Rules 过滤指标）
+  // ============================================================
+  /** V1.6-06 新增：Watch Rules 过滤前数量（未配置规则时与 total_scored 相同） */
+  watch_rules_before?: number;
+  /** V1.6-06 新增：Watch Rules 过滤后数量（未配置规则时与 total_scored 相同） */
+  watch_rules_after?: number;
+  /** V1.6-06 新增：Watch Rules 被过滤掉的数量 */
+  watch_rules_filtered_out?: number;
 }
 
 /** 默认每个 provider 最大结果数 */
@@ -182,12 +192,14 @@ export class SearchOrchestrator {
    * @param spec 雷达需求规格
    * @param query 查询词（可选，为空时从 spec 拼接）
    * @param providerRouting Provider 路由（可选，V1.5 自检：优先于 inferRadarType）
+   * @param watchRules Watch Rules DSL 规则列表（可选，V1.6-06 新增：搜索结果入库前过滤）
    * @returns SearchOrchestratorResult
    */
   async search(
     spec: RadarRequirementSpec,
     query?: string,
     providerRouting?: ProviderRouting,
+    watchRules?: string[],
   ): Promise<SearchOrchestratorResult> {
     const startTime = Date.now();
     const errors: string[] = [];
@@ -361,6 +373,46 @@ export class SearchOrchestrator {
       errors.push(`来源透明处理失败: ${errMsg}`);
     }
 
+    // 步骤 7：V1.6-06 Watch Rules 过滤（三层筛选之后，入库之前）
+    let watchRulesBefore = opportunities.length;
+    let watchRulesAfter = opportunities.length;
+    let watchRulesFilteredOut = 0;
+    if (watchRules && watchRules.length > 0 && opportunities.length > 0) {
+      try {
+        const { parseWatchRules } = await import("../watch/dsl-parser");
+        const { filterByWatchRules } = await import("../watch/search-integration");
+        const ruleSet = parseWatchRules(watchRules.join("\n"));
+        // 仅在有有效规则时过滤（空规则集返回全部，避免误过滤）
+        if (ruleSet.rules.length > 0) {
+          const radarTypeCast = radarType as RadarType;
+          const { filtered, filtered_out } = filterByWatchRules(
+            opportunities,
+            ruleSet,
+            radarTypeCast,
+          );
+          watchRulesBefore = opportunities.length;
+          watchRulesAfter = filtered.length;
+          watchRulesFilteredOut = filtered_out;
+
+          // 同步过滤 opportunityCards 和 sourceCandidates（按 url 对齐）
+          const filteredUrls = new Set(filtered.map((o) => o.search_result.url));
+          if (opportunityCards && opportunityCards.length > 0) {
+            opportunityCards = opportunityCards.filter((card) =>
+              filteredUrls.has(card.official_source_url),
+            );
+          }
+          if (sourceCandidates && sourceCandidates.length > 0) {
+            sourceCandidates = sourceCandidates.filter((s) => filteredUrls.has(s.url));
+          }
+          // evidenceItems 与 sourceId 关联，难以直接对齐，保留全部（不影响入库）
+          opportunities = filtered;
+        }
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        errors.push(`Watch Rules 过滤失败: ${errMsg}`);
+      }
+    }
+
     return {
       total_raw: rawResults.length,
       total_rule_passed: ruleResult.passed.length,
@@ -373,6 +425,10 @@ export class SearchOrchestrator {
       sourceCandidates,
       evidenceItems,
       opportunityCards,
+      // V1.6-06 新增字段
+      watch_rules_before: watchRulesBefore,
+      watch_rules_after: watchRulesAfter,
+      watch_rules_filtered_out: watchRulesFilteredOut,
     };
   }
 }
