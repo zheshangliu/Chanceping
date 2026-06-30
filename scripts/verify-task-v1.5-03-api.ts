@@ -233,7 +233,8 @@ async function main(): Promise<void> {
   // 7. DELETE /api/radars/:id → 200, status=archived（先创建一个用于删除的雷达）
   let deleteTargetId = "";
   {
-    // 先创建一个新雷达用于删除测试，避免影响后续 run 测试
+    // V1.5-07 配额限制：先归档 customId 释放配额，再创建用于删除的雷达
+    await deleteJson(app, `/api/radars/${customId}`);
     const createRes = await postJson(app, "/api/radars", { name: "待删除雷达", kind: "custom" });
     deleteTargetId = (createRes.json.data as { id?: string })?.id ?? "";
 
@@ -242,6 +243,10 @@ async function main(): Promise<void> {
     const radar = json.data as { status?: string; deletedAt?: string } | null;
     check("7.1 status=archived", radar?.status === "archived", `status=${radar?.status}`);
     check("7.2 deletedAt 有值", typeof radar?.deletedAt === "string" && radar!.deletedAt!.length > 0);
+
+    // 重新创建 customId 供后续 activate/run 测试使用
+    const recreateRes = await postJson(app, "/api/radars", { name: "测试自定义雷达", kind: "custom" });
+    customId = (recreateRes.json.data as { id?: string })?.id ?? customId;
   }
 
   // 8. DELETE /api/radars/builtin_ai_competition → 403 RADAR_NOT_DELETABLE
@@ -318,6 +323,8 @@ async function main(): Promise<void> {
 
   // 16. POST /api/radars/draft雷达/run → 400 RADAR_NOT_ACTIVE
   {
+    // V1.5-07 配额限制：先归档 customId 释放配额，再创建 draft 雷达
+    await deleteJson(app, `/api/radars/${customId}`);
     // 创建一个 draft 状态的雷达
     const createRes = await postJson(app, "/api/radars", { name: "草稿雷达", kind: "custom" });
     const draftId = (createRes.json.data as { id?: string })?.id ?? "";

@@ -26,6 +26,8 @@ import { getDataMode } from "../../demo/data-mode";
 import type { RadarType } from "../../agents/opportunity-store";
 import type { RadarKind, RadarStatus, RadarSchedule } from "../../schema/radar";
 import { RadarGenerator } from "../../agents/radar-generator";
+import { getCurrentUser } from "../../agents/user-context";
+import { RadarQuotaChecker } from "../../agents/radar-quota";
 
 /** 从 RadarKind 推断 RadarType（custom 默认 ai_competition） */
 function kindToRadarType(kind: RadarKind): RadarType {
@@ -166,6 +168,21 @@ export function radarsRoutes(ctx: AppContext): Hono {
     if (!body.name || !body.kind) {
       return c.json(errorResponse("BAD_REQUEST", "name 和 kind 必填", Date.now() - start, 400), 400);
     }
+    // V1.5-07 新增：配额检查
+    const user = getCurrentUser();
+    const quotaChecker = new RadarQuotaChecker(ctx.radarStore);
+    const quotaCheck = quotaChecker.check(user);
+    if (!quotaCheck.allowed) {
+      return c.json(
+        errorResponse(
+          "RADAR_QUOTA_EXCEEDED",
+          `已达到免费用户雷达上限（${quotaCheck.quota}个），当前已有 ${quotaCheck.current} 个自定义雷达。归档旧雷达或升级套餐以创建更多。`,
+          Date.now() - start,
+          403,
+        ),
+        403,
+      );
+    }
     const radar = ctx.radarRegistry.createCustomRadar({
       name: body.name,
       kind: body.kind,
@@ -222,6 +239,27 @@ export function radarsRoutes(ctx: AppContext): Hono {
       includeArchived,
     });
     return c.json({ success: true, data: radars, error: null, duration_ms: Date.now() - start } satisfies ApiResponse);
+  });
+
+  // ============================================================
+  // GET /quota - 配额查询（V1.5-07 新增，须在 /:id 之前注册）
+  // ============================================================
+  app.get("/quota", (c) => {
+    const start = Date.now();
+    const user = getCurrentUser();
+    const quotaChecker = new RadarQuotaChecker(ctx.radarStore);
+    const result = quotaChecker.check(user);
+    return c.json({
+      success: true,
+      data: {
+        current: result.current,
+        quota: result.quota,
+        plan: user.plan,
+        allowed: result.allowed,
+      },
+      error: null,
+      duration_ms: Date.now() - start,
+    } satisfies ApiResponse);
   });
 
   // ============================================================

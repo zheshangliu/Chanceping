@@ -81,7 +81,7 @@
 
   /**
    * 加载雷达列表（GET /api/radars）。
-   * 成功后调用 renderRadarCards() 渲染。
+   * 成功后调用 renderRadarCards() 渲染，并加载配额信息。
    */
   async function loadRadarList() {
     const grid = document.getElementById("radar-cards-grid");
@@ -92,6 +92,7 @@
       const json = await res.json();
       if (json.success && Array.isArray(json.data)) {
         renderRadarCards(json.data);
+        loadQuotaInfo();
       } else {
         grid.innerHTML = '<p class="placeholder">加载失败</p>';
         if (window.showToast) showToast("雷达列表加载失败", "error");
@@ -99,6 +100,32 @@
     } catch (err) {
       grid.innerHTML = '<p class="placeholder">加载失败：网络错误</p>';
       if (window.showToast) showToast("雷达列表加载失败：网络错误", "error");
+    }
+  }
+
+  /**
+   * 加载配额信息（GET /api/radars/quota，V1.5-07 新增）。
+   * 渲染配额条 + 控制"创建雷达"按钮禁用状态。
+   */
+  async function loadQuotaInfo() {
+    try {
+      const res = await fetch("/api/radars/quota");
+      const json = await res.json();
+      if (!json.success || !json.data) return;
+      const { current, quota, plan, allowed } = json.data;
+      const bar = document.getElementById("radar-quota-bar");
+      if (bar) {
+        const planLabel = { free: "免费版", basic: "基础版", pro: "专业版", enterprise: "企业版" }[plan] || plan;
+        bar.textContent = `自定义雷达 ${current}/${quota}（${planLabel}）`;
+        bar.className = "radar-quota-bar" + (allowed ? "" : " quota-full");
+      }
+      const createBtn = document.getElementById("btn-create-radar");
+      if (createBtn) {
+        createBtn.disabled = !allowed;
+        createBtn.title = allowed ? "" : `已达到 ${quota} 个上限，请归档旧雷达或升级套餐`;
+      }
+    } catch {
+      // 配额加载失败不阻断列表渲染
     }
   }
 
@@ -292,8 +319,14 @@
         loadRadarList();
       } else {
         if (window.showToast) {
+          const code = json.error?.code || "";
           const msg = json.error?.message || "创建失败";
-          showToast(`创建失败：${msg}`, "error");
+          // V1.5-07：配额超限特殊提示
+          if (code === "RADAR_QUOTA_EXCEEDED") {
+            showToast("已达到免费用户上限，请归档旧雷达或升级套餐", "warning");
+          } else {
+            showToast(`创建失败：${msg}`, "error");
+          }
         }
         if (submitBtn) {
           submitBtn.disabled = false;
