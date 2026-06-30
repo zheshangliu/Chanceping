@@ -19,9 +19,12 @@ import { generateReminders } from "../agents/reminder-engine";
 import { generateRadarReport } from "../agents/radar-report-generator";
 import type { RadarReportInput } from "../agents/radar-report-generator";
 import type { RadarRequirementSpec } from "../schema/radar-requirement-spec";
+import type { RadarSchedule } from "../schema/radar";
 import { notifyReminders } from "../notify/notify-sender";
 import type { NotifyChannel } from "../notify/channel-adapter";
 import { getDataMode } from "../demo/data-mode";
+import { computeNextRunAt } from "../api/routes/radars";
+import type { RadarType } from "../agents/opportunity-store";
 
 /**
  * 执行触发器。
@@ -51,17 +54,29 @@ export async function executeTrigger(
 /**
  * 搜索触发器：调用 SearchOrchestrator。
  *
- * params:
- *   - radar_type: 雷达类型（默认 ai_competition）
- *   - max_results: 每个-provider 最大结果数（默认 20）
+ * params（V1.5-06 扩展）：
+ *   - radar_id: 雷达 ID（优先，从 RadarStore 取 spec + 生成 RadarRun + 绑定 radarId）
+ *   - radar_type: 雷达类型（radar_id 不存在时 fallback，默认 ai_competition）
+ *   - max_results: 每个 provider 最大结果数（默认 20）
  */
 async function executeSearchTrigger(
   params: Record<string, unknown>,
   ctx: AppContext,
 ): Promise<Record<string, unknown>> {
-  const radarType = (params.radar_type as string) ?? "ai_competition";
   const maxResults = (params.max_results as number) ?? 20;
+  const radarId = params.radar_id as string | undefined;
 
+  // V1.5-06：radar_id 优先路径
+  if (radarId && ctx.radarStore) {
+    const radar = ctx.radarStore.get(radarId);
+    if (radar) {
+      return executeScheduledRadarSearch(radar, maxResults, ctx);
+    }
+    // radar_id 不存在 → fallback 到旧逻辑
+  }
+
+  // 旧逻辑：radar_type + createSimpleSpec（完全不变）
+  const radarType = (params.radar_type as string) ?? "ai_competition";
   const spec = createSimpleSpec(radarType);
   const orchestrator = new SearchOrchestrator({
     llmAdapter: ctx.llmAdapter,
@@ -82,6 +97,124 @@ async function executeSearchTrigger(
     duration_ms: result.duration_ms,
     errors: result.errors,
   };
+}
+
+/**
+ * V1.5-06：执行定时雷达搜索（radar_id 优先路径）。
+ *
+ * 流程：
+ *   1. 创建 RadarRun（mode=scheduled, triggeredBy=scheduler）
+ *   2. 更新 Radar.currentRunId
+ *   3. SearchOrchestrator 执行搜索
+ *   4. 结果存入 OpportunityStore，绑定 radarId
+ *   5. 更新 RadarRun（status=succeeded, finishedAt, totalRaw, totalScored, opportunityKeys）
+ *   6. 更新 Radar（currentRunId=undefined, lastRunStatus, lastRunAt, schedule.lastRunAt, schedule.nextRunAt）
+ *   7. 返回结构化结果（含 radar_id / run_id）
+ *
+ * @param radar 雷达实体
+ * @param maxResults 每个 provider 最大结果数
+ * @param ctx 应用上下文
+ * @returns 执行结果
+ */
+async function executeScheduledRadarSearch(
+  radar: { id: string; name: string; kind: string; spec: RadarRequirementSpec; schedule?: RadarSchedule },
+  maxResults: number,
+  ctx: AppContext,
+): Promise<Record<string, unknown>> {
+  const spec = radar.spec;
+  const run = ctx.radarRunStore.create({
+    radarId: radar.id,
+    mode: "scheduled",
+    triggeredBy: "scheduler",
+  });
+  ctx.radarStore.update(radar.id, { currentRunId: run.id });
+
+  try {
+    const orchestrator = new SearchOrchestrator({
+      llmAdapter: ctx.llmAdapter,
+      maxResultsPerProvider: maxResults,
+      enableContentFetch: false,
+      mockContent: true,
+      dataMode: getDataMode(),
+    });
+    const result = await orchestrator.search(spec);
+
+    // 结果存入 OpportunityStore，绑定 radarId
+    const radarType = kindToRadarType(radar.kind);
+    const opportunityKeys: string[] = [];
+    if (result.opportunityCards && result.opportunityCards.length > 0) {
+      const entries = ctx.store.addBatch(result.opportunityCards, radarType, radar.id);
+      for (const entry of entries) opportunityKeys.push(entry.dedup_key);
+    }
+
+    const now = new Date().toISOString();
+    ctx.radarRunStore.update(run.id, {
+      status: "succeeded",
+      finishedAt: now,
+      totalRaw: result.total_raw,
+      totalScored: result.total_scored,
+      opportunityKeys,
+      sourceCandidateCount: result.sourceCandidates?.length,
+    });
+    ctx.radarRunStore.save();
+
+    // 更新 Radar：currentRunId 清空 + lastRunStatus + lastRunAt + schedule 更新
+    const schedulePatch: {
+      currentRunId: undefined;
+      lastRunStatus: "succeeded";
+      lastRunAt: string;
+      schedule?: RadarSchedule;
+    } = {
+      currentRunId: undefined,
+      lastRunStatus: "succeeded",
+      lastRunAt: now,
+    };
+    if (radar.schedule && radar.schedule.enabled) {
+      schedulePatch.schedule = {
+        ...radar.schedule,
+        lastRunAt: now,
+        nextRunAt: computeNextRunAt(radar.schedule.cron, radar.schedule.timezone, new Date(now)),
+      };
+    }
+    ctx.radarStore.update(radar.id, schedulePatch);
+    ctx.radarStore.save();
+
+    return {
+      radar_id: radar.id,
+      radar_name: radar.name,
+      run_id: run.id,
+      total_raw: result.total_raw,
+      total_rule_passed: result.total_rule_passed,
+      total_ai_passed: result.total_ai_passed,
+      total_scored: result.total_scored,
+      opportunities_count: result.opportunities.length,
+      duration_ms: result.duration_ms,
+      errors: result.errors,
+    };
+  } catch (err) {
+    const now = new Date().toISOString();
+    ctx.radarRunStore.update(run.id, {
+      status: "failed",
+      finishedAt: now,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    ctx.radarRunStore.save();
+    ctx.radarStore.update(radar.id, {
+      currentRunId: undefined,
+      lastRunStatus: "failed",
+      lastRunAt: now,
+    });
+    ctx.radarStore.save();
+    throw err;
+  }
+}
+
+/** 从 RadarKind 推断 RadarType（custom 默认 ai_competition，同 radars.ts 的 kindToRadarType） */
+function kindToRadarType(kind: string): RadarType {
+  if (kind === "ai_competition" || kind === "opc_policy" || kind === "cultural_heritage") {
+    return kind;
+  }
+  return "ai_competition";
 }
 
 /**

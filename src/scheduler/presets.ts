@@ -1,14 +1,15 @@
 /**
- * 5 种预设模板（PresetTemplate）
+ * 6 种预设模板（PresetTemplate）
  *
- * 来源：Task 028 第 5.3 节。
+ * 来源：Task 028 第 5.3 节；V1.5-06 新增 radar_custom_daily。
  *
  * 模板清单：
- *   1. daily_morning    - 每日早报（08:00 搜索）
- *   2. weekly_report    - 每周周报（周一 09:00 报告）
- *   3. deadline_alert   - 截止提醒（每日 18:00 提醒）
- *   4. realtime         - 实时监控（每小时搜索）
- *   5. competition_mode - 参赛模式（每 4 小时搜索 3 种雷达）
+ *   1. daily_morning       - 每日早报（08:00 搜索）
+ *   2. weekly_report       - 每周周报（周一 09:00 报告）
+ *   3. deadline_alert      - 截止提醒（每日 18:00 提醒）
+ *   4. realtime            - 实时监控（每小时搜索）
+ *   5. competition_mode    - 参赛模式（每 4 小时搜索 3 种雷达）
+ *   6. radar_custom_daily  - 自定义雷达每日运行（V1.5-06 新增，job_params 用 radar_id）
  */
 
 import type { PresetTemplate } from "./types";
@@ -109,6 +110,21 @@ export const PRESET_TEMPLATES: PresetTemplate[] = [
         day_of_week: null,
         job_type: "search",
         job_params: { radar_type: "ai_competition", max_results: 15 },
+        enabled: true,
+      },
+    ],
+  },
+  {
+    id: "radar_custom_daily",
+    name: "自定义雷达每日运行",
+    description: "每日 08:00 运行指定雷达（创建时需填入 radar_id）",
+    periods: [
+      {
+        id: "radar_custom_daily_search",
+        time: "08:00",
+        day_of_week: null,
+        job_type: "search",
+        job_params: { radar_id: "", max_results: 20 },
         enabled: true,
       },
     ],

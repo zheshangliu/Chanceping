@@ -79,6 +79,29 @@ export interface RadarPrivacy {
 }
 
 // ============================================================
+// 定时运行配置（V1.5-06 新增）
+// ============================================================
+
+/**
+ * 雷达定时运行配置。
+ *
+ * cron 为 5 字段 unix 格式（分 时 日 月 周），如 "0 8 * * *" = 每天 8:00。
+ * 时区用 IANA 格式，如 "Asia/Shanghai"。
+ */
+export interface RadarSchedule {
+  /** cron 表达式（5 字段 unix 格式，如 "0 8 * * *" = 每天 8:00） */
+  cron: string;
+  /** 时区（IANA 格式，如 "Asia/Shanghai"） */
+  timezone: string;
+  /** 是否启用 */
+  enabled: boolean;
+  /** 上次执行时间（ISO 8601） */
+  lastRunAt?: string;
+  /** 下次执行时间（ISO 8601） */
+  nextRunAt?: string;
+}
+
+// ============================================================
 // Provider 路由配置（V1.5-01 新增）
 // ============================================================
 
@@ -173,6 +196,8 @@ export interface Radar {
   spec: RadarRequirementSpec;
   /** Provider 路由配置（V1.5-01 新增，不塞进 spec） */
   providerRouting?: ProviderRouting;
+  /** V1.5-06 新增：定时运行配置 */
+  schedule?: RadarSchedule;
 
   // 运行追踪（V1.5-01 新增）
   /** 当前运行 ID（运行中才有值，完成后清空） */
