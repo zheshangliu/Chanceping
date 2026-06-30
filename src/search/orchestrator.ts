@@ -112,6 +112,18 @@ export interface SearchOrchestratorResult {
   ai_filter_skipped?: number;
   /** V1.6-07 新增：实际调用 AI 精筛的数量（fresh 未命中缓存） */
   ai_filter_executed?: number;
+  // ============================================================
+  // V1.6-08 新增字段（providerRouting fallback 降级信息）
+  // ============================================================
+  /** V1.6-08 新增：provider 降级信息（primary 全失败时记录 fallback 触发情况） */
+  providerDegradation?: {
+    /** 是否触发了 fallback */
+    fallbackUsed: boolean;
+    /** primary provider 的错误记录（provider name → 错误信息） */
+    primaryErrors: Record<string, string>;
+    /** 实际被调用的 fallback provider 名称列表 */
+    fallbackProviders: string[];
+  };
 }
 
 /** 默认每个 provider 最大结果数 */
@@ -224,6 +236,8 @@ export class SearchOrchestrator {
   ): Promise<SearchOrchestratorResult> {
     const startTime = Date.now();
     const errors: string[] = [];
+    // V1.6-08：provider 降级信息（live 模式下由 primary/fallback 逻辑写入）
+    let _providerDegradation: SearchOrchestratorResult["providerDegradation"] | undefined;
 
     // 步骤 0：推断雷达类型（供 Demo 数据加载和真实搜索共用）
     const radarType = inferRadarType(spec);
@@ -253,14 +267,35 @@ export class SearchOrchestrator {
     } else {
       // Live 模式：获取适用 providers
       // V1.5 自检：优先使用 providerRouting，fallback 到 inferRadarType
-      let providers;
+      // V1.6-08：支持 primary 全失败时启用 fallback provider
+      let primaryProviders;
+      let fallbackProviders: typeof primaryProviders = [];
+      let providerDegradation: SearchOrchestratorResult["providerDegradation"] | undefined;
+
       if (providerRouting && providerRouting.primary && providerRouting.primary.length > 0) {
-        providers = providerRegistry.getByNames(providerRouting.primary);
+        // V1.6-08：非法 provider 名称告警
+        const invalidNames = providerRouting.primary.filter(
+          (name) => !providerRegistry.get(name),
+        );
+        if (invalidNames.length > 0) {
+          console.warn(`[V1.6-08] 非法 provider 名称: ${invalidNames.join(", ")}`);
+        }
+        primaryProviders = providerRegistry.getByNames(providerRouting.primary);
+        // V1.6-08：预取 fallback providers（primary 全失败时启用）
+        if (providerRouting.fallback && providerRouting.fallback.length > 0) {
+          const invalidFallbackNames = providerRouting.fallback.filter(
+            (name) => !providerRegistry.get(name),
+          );
+          if (invalidFallbackNames.length > 0) {
+            console.warn(`[V1.6-08] 非法 fallback provider 名称: ${invalidFallbackNames.join(", ")}`);
+          }
+          fallbackProviders = providerRegistry.getByNames(providerRouting.fallback);
+        }
       } else {
-        providers = providerRegistry.getByRadarType(radarType).filter((p) => p.enabled);
+        primaryProviders = providerRegistry.getByRadarType(radarType).filter((p) => p.enabled);
       }
 
-      if (providers.length === 0) {
+      if (primaryProviders.length === 0 && fallbackProviders.length === 0) {
         errors.push(`无可用搜索 provider（radar_type=${radarType}）`);
         return {
           total_raw: 0,
@@ -273,12 +308,12 @@ export class SearchOrchestrator {
         };
       }
 
-      // 步骤 2：并行调用各 provider 的 search()
+      // 步骤 2：并行调用各 primary provider 的 search()
       const searchQuery = query && query.trim() ? query.trim() : buildQueryFromSpec(spec);
       const searchOptions = { max_results: this.maxResultsPerProvider };
 
-      const providerResults = await Promise.all(
-        providers.map(async (provider) => {
+      const primaryResults = await Promise.all(
+        primaryProviders.map(async (provider) => {
           try {
             const results = await provider.search(searchQuery, searchOptions);
             return { provider: provider.name, results, error: null as string | null };
@@ -289,15 +324,67 @@ export class SearchOrchestrator {
         }),
       );
 
-      // 收集错误
-      for (const r of providerResults) {
+      // 收集 primary 错误
+      const primaryErrors: Record<string, string> = {};
+      for (const r of primaryResults) {
         if (r.error) {
           errors.push(r.error);
+          primaryErrors[r.provider] = r.error;
         }
       }
 
-      // 合并搜索结果
-      rawResults = deduplicateByUrL(providerResults.flatMap((r) => r.results));
+      // 合并 primary 搜索结果
+      let allResults = deduplicateByUrL(primaryResults.flatMap((r) => r.results));
+
+      // V1.6-08：primary 全失败（无结果）时启用 fallback
+      let fallbackUsed = false;
+      const fallbackProviderNames: string[] = [];
+      if (
+        allResults.length === 0 &&
+        primaryProviders.length > 0 &&
+        fallbackProviders.length > 0
+      ) {
+        fallbackUsed = true;
+        const fallbackResults = await Promise.all(
+          fallbackProviders.map(async (provider) => {
+            fallbackProviderNames.push(provider.name);
+            try {
+              const results = await provider.search(searchQuery, searchOptions);
+              return { provider: provider.name, results, error: null as string | null };
+            } catch (err) {
+              const errMsg = err instanceof Error ? err.message : String(err);
+              const fallbackErrMsg = `[fallback] provider ${provider.name} 调用失败: ${errMsg}`;
+              return { provider: provider.name, results: [] as SearchResult[], error: fallbackErrMsg };
+            }
+          }),
+        );
+
+        for (const r of fallbackResults) {
+          if (r.error) {
+            errors.push(r.error);
+            primaryErrors[r.provider] = r.error;
+          }
+        }
+
+        allResults = deduplicateByUrL(fallbackResults.flatMap((r) => r.results));
+        errors.push(
+          `[V1.6-08] primary providers 全失败，已降级到 fallback: ${fallbackProviderNames.join(", ")}`,
+        );
+      }
+
+      // V1.6-08：记录降级信息（仅在配置了 fallback 时才输出，即使未触发）
+      if (providerRouting?.fallback && providerRouting.fallback.length > 0) {
+        providerDegradation = {
+          fallbackUsed,
+          primaryErrors,
+          fallbackProviders: fallbackProviderNames,
+        };
+      }
+
+      rawResults = allResults;
+
+      // 将 providerDegradation 存入闭包变量，供最终 return 使用
+      _providerDegradation = providerDegradation;
     }
 
     // 边界情况：无搜索结果
@@ -310,6 +397,8 @@ export class SearchOrchestrator {
         opportunities: [],
         errors,
         duration_ms: Date.now() - startTime,
+        // V1.6-08：即使在无结果时也输出降级信息（便于排查 primary 失败原因）
+        providerDegradation: _providerDegradation,
       };
     }
 
@@ -519,6 +608,8 @@ export class SearchOrchestrator {
       // V1.6-07 新增字段（增量标签复用指标）
       ai_filter_skipped: aiFilterSkipped,
       ai_filter_executed: aiFilterExecuted,
+      // V1.6-08 新增字段（provider 降级信息）
+      providerDegradation: _providerDegradation,
     };
   }
 }
